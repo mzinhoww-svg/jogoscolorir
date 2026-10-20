@@ -1,7 +1,7 @@
 // Dinosaurs (friendly cartoon style) — 15 distinct subjects:
 // 1 T-rex, 2 triceratops, 3 stegosaurus, 4 brachiosaurus beside a tree, 5 baby hatching from an egg,
 // 6 pterodactyl in the sky, 7 ankylosaurus, 8 parasaurolophus, 9 spinosaurus, 10 volcano with footprints,
-// 11 nest with three eggs, 12 smiling dino face, 13 skull and bone, 14 pachycephalosaurus,
+// 11 nest with three eggs, 12 smiling dino face, 13 birthday dino with cake, 14 pachycephalosaurus,
 // 15 baby dino in a jungle with a palm tree.
 import { page } from '../dsl';
 import type { PageDef, Pen } from '../types';
@@ -77,19 +77,6 @@ function sun(p: Pen, x: number, y: number, r: number): void {
     const a = rad(i * 45);
     p.line(x + (r + 22) * Math.cos(a), y + (r + 22) * Math.sin(a), x + (r + 60) * Math.cos(a), y + (r + 60) * Math.sin(a));
   }
-}
-
-/** Cartoon bone centred at (cx,cy), length L, rotated by rot radians. */
-function bone(p: Pen, cx: number, cy: number, L: number, rot: number, r = 42, t = 24): void {
-  const d = r * 0.72;
-  const xR = L / 2 - r;
-  const s = Math.sqrt(r * r - d * d);
-  const xA = xR - Math.sqrt(r * r - (d - t) * (d - t));
-  const T = (X: number, Y: number) =>
-    `${f(cx + X * Math.cos(rot) - Y * Math.sin(rot))} ${f(cy + X * Math.sin(rot) + Y * Math.cos(rot))}`;
-  p.path(
-    `M${T(xA, -t)} A${r} ${r} 0 1 1 ${T(xR + s, 0)} A${r} ${r} 0 1 1 ${T(xA, t)} L${T(-xA, t)} A${r} ${r} 0 1 1 ${T(-xR - s, 0)} A${r} ${r} 0 1 1 ${T(-xA, -t)} Z`,
-  );
 }
 
 export const pages: PageDef[] = [
@@ -333,19 +320,28 @@ export const pages: PageDef[] = [
     p.circle(570, 280, 20);
   }),
 
-  // 13 skull + bone
+  // 13 birthday dino with cake
   page('dinosaurs', 13, (p) => {
-    union(p, 400, 360, 210, 700, 420, 125); // skull
-    p.circle(380, 320, 64); // eye socket
-    p.circle(380, 320, 28);
-    p.ellipse(790, 400, 20, 13); // nostril
-    p.path('M430 650 L470 610 L510 650 L550 610 L590 650 L630 610 L670 650 L710 610 L750 650 Q740 705 590 715 Q450 715 430 650 Z'); // jaw
-    bone(p, 500, 860, 760, 0, 46, 26);
-    p.path('M520 230 Q570 260 580 320');
-    p.star(150, 640, 50, 22, 4);
-    p.star(870, 700, 40, 18, 4);
-    p.circle(130, 800, 22);
-    p.circle(880, 830, 22);
+    p.circle(500, 305, 140); // head
+    lobe(p, 500, 305, 140, -112, -68, 110, 0); // party hat
+    lobe(p, 500, 305, 140, -165, -140, 45, 0); // crest bumps
+    lobe(p, 500, 305, 140, -40, -15, 45, 0);
+    eyes(p, 440, 280, 30);
+    eyes(p, 560, 280, 30);
+    p.circle(500, 370, 28); // blowing mouth
+    p.circle(375, 350, 22); // cheeks
+    p.circle(625, 350, 22);
+    p.roundRect(220, 655, 560, 110, 16); // cake top tier
+    p.roundRect(130, 765, 740, 170, 20); // bottom tier
+    for (const x of [350, 500, 650]) {
+      p.roundRect(x - 18, 560, 36, 95, 6); // candle
+      p.path(`M${x} 500 Q${x - 30} 535 ${x} 548 Q${x + 30} 535 ${x} 500 Z`); // flame
+    }
+    p.path('M240 700 L760 700');
+    p.circle(230, 850, 18);
+    p.circle(400, 865, 18);
+    p.circle(600, 865, 18);
+    p.circle(770, 850, 18);
   }),
 
   // 14 pachycephalosaurus

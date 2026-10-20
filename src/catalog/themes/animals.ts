@@ -260,18 +260,23 @@ export const pages: PageDef[] = [
 
   // 9 cow
   page('animals', 9, (p) => {
-    p.circle(500, 460, 250); // head
-    lobe(p, 500, 460, 250, -128, -108, 110, 8); // horns
-    lobe(p, 500, 460, 250, -72, -52, 110, 8);
-    lobe(p, 500, 460, 250, 158, 203, 150, 10); // ears
-    lobe(p, 500, 460, 250, -23, 22, 150, 10);
-    p.ellipse(500, 735, 195, 135); // muzzle
-    p.ellipse(430, 740, 22, 30);
-    p.ellipse(570, 740, 22, 30);
-    eyes(p, 400, 430, 36);
-    eyes(p, 600, 430, 36);
-    p.ellipse(590, 300, 68, 48, 0.4); // patch
-    p.path('M420 815 Q500 860 580 815');
+    p.circle(500, 410, 230); // head
+    lobe(p, 500, 410, 230, -128, -108, 120, 0); // horns
+    lobe(p, 500, 410, 230, -72, -52, 120, 0);
+    lobe(p, 500, 410, 230, 160, 205, 170, 0); // ears
+    lobe(p, 500, 410, 230, -25, 20, 170, 0);
+    p.circle(130, 420, 30); // inner ears
+    p.circle(870, 400, 30);
+    p.ellipse(360, 400, 95, 80, -0.3); // black patches
+    p.path('M560 230 Q640 210 675 290 Q655 360 590 335 Q540 290 560 230 Z');
+    eyes(p, 370, 400, 32);
+    eyes(p, 630, 420, 32);
+    p.ellipse(500, 630, 190, 125); // muzzle
+    p.ellipse(430, 640, 20, 28); // nostrils
+    p.ellipse(570, 640, 20, 28);
+    p.path('M430 710 Q500 755 570 710');
+    p.path('M320 785 Q500 850 680 785 L690 835 Q500 905 310 835 Z'); // collar
+    p.circle(500, 925, 32); // bell
   }),
 
   // 10 monkey with banana
