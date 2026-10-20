@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   COLORS,
   SHINES,
@@ -146,5 +146,30 @@ describe('tool distinctness', () => {
           0.15,
         );
       }
+  });
+});
+
+describe('shine gradient reuse', () => {
+  it('creates a single gradient for a whole stroke', async () => {
+    const { createCanvas } = await import('@napi-rs/canvas');
+    const ctx = createCanvas(300, 200).getContext('2d') as unknown as CanvasRenderingContext2D;
+    const spy = vi.spyOn(ctx, 'createLinearGradient');
+    const brush: Brush = {
+      tool: 'shine',
+      color: '#f00',
+      shine: SHINES[0]!.id,
+      pattern: PATTERNS[0]!,
+      size: 'm',
+    };
+    const rng = mulberry32(1);
+    for (let i = 0; i < 5; i++)
+      stampSegment(
+        ctx,
+        brush,
+        { x: 10 + i * 30, y: 50, p: -1 },
+        { x: 40 + i * 30, y: 60, p: -1 },
+        rng,
+      );
+    expect(spy).toHaveBeenCalledTimes(1);
   });
 });

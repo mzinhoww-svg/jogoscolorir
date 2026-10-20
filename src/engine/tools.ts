@@ -106,6 +106,20 @@ function walk(
   }
 }
 
+const shineGradients = new WeakMap<
+  CanvasRenderingContext2D,
+  { id: string; r: number; g: CanvasGradient }
+>();
+/** Gradient centred on the origin, reused across stamps/segments for the same context, shine and radius. */
+function shineGradient(ctx: CanvasRenderingContext2D, shine: Shine, r: number): CanvasGradient {
+  const hit = shineGradients.get(ctx);
+  if (hit && hit.id === shine.id && hit.r === r) return hit.g;
+  const g = ctx.createLinearGradient(-r, -r, r, r);
+  shine.stops.forEach((c, i) => g.addColorStop(i / (shine.stops.length - 1), c));
+  shineGradients.set(ctx, { id: shine.id, r, g });
+  return g;
+}
+
 function sparkle(ctx: CanvasRenderingContext2D, x: number, y: number, s: number): void {
   const k = s * 0.22;
   ctx.beginPath();
@@ -203,13 +217,16 @@ export function stampSegment(
     case 'shine': {
       const shine = SHINES.find((s) => s.id === brush.shine) ?? SHINES[0]!;
       const r = w / 2;
+      // One gradient per context/colors/size, drawn at the origin and translated per stamp.
+      const g = shineGradient(ctx, shine, r);
       walk(from, to, r * 0.5, (x, y) => {
-        const g = ctx.createLinearGradient(x - r, y - r, x + r, y + r);
-        shine.stops.forEach((c, i) => g.addColorStop(i / (shine.stops.length - 1), c));
+        ctx.save();
+        ctx.translate(x, y);
         ctx.fillStyle = g;
         ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
         ctx.fill();
+        ctx.restore();
         if (rng() < 0.35) {
           ctx.fillStyle = '#FFFFFF';
           const a = rng() * Math.PI * 2;
