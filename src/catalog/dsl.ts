@@ -76,12 +76,7 @@ export class PathPen implements Pen {
   }
 }
 
-export function page(
-  themeId: ThemeId,
-  index: number,
-  slug: string,
-  draw: (p: Pen) => void,
-): PageDef {
+export function page(themeId: ThemeId, index: number, draw: (p: Pen) => void): PageDef {
   const nn = String(index).padStart(2, '0');
-  return { id: `${themeId}-${nn}`, themeId, index, nameKey: `page.${themeId}.${slug}`, draw };
+  return { id: `${themeId}-${nn}`, themeId, index, nameKey: `page.${themeId}-${nn}`, draw };
 }

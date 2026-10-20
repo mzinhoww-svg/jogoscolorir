@@ -2,7 +2,7 @@ import { page } from '../dsl';
 import type { PageDef } from '../types';
 
 export const pages: PageDef[] = [
-  page('animals', 1, 'cat', (p) => {
+  page('animals', 1, (p) => {
     p.poly([
       [220, 450],
       [240, 130],
@@ -42,7 +42,7 @@ export const pages: PageDef[] = [
     p.line(890, 680, 775, 670);
     p.path('M500 310 L500 380 M440 325 L455 385 M560 325 L545 385'); // forehead stripes
   }),
-  page('animals', 2, 'fish', (p) => {
+  page('animals', 2, (p) => {
     p.ellipse(420, 500, 310, 200); // body
     p.poly([
       [690, 500],

@@ -58,8 +58,8 @@ describe('regions', () => {
         break;
       }
     expect(lx).toBeGreaterThan(0);
-    const l = regionAt(map, lx + 0.5, 100.5);
-    expect(l).toBeGreaterThan(0);
+    // outer edge of the outer circle: nearest non-line pixel is the outside region
+    expect(regionAt(map, lx + 0.5, 100.5)).toBe(regionAt(map, 2, 2));
   });
 
   it('regionAt returns 0 when nothing within radius', () => {

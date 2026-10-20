@@ -1,8 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { createCanvas } from '@napi-rs/canvas';
 import { THEMES, CATALOG_COMPLETE, getPage } from '@/catalog';
 import { rasterizeOutline } from '@/catalog/render';
-import { buildRegionMap } from '@/engine/regions';
+import { buildRegionMap, type RegionMap } from '@/engine/regions';
 
 const all = THEMES.flatMap((t) => t.pages);
 const SIZE = 1000;
@@ -36,6 +36,7 @@ describe('catalog structure', () => {
         expect(getPage(p.id)).toBe(p);
       }
     expect(new Set(all.map((p) => p.nameKey)).size).toBe(all.length);
+    for (const p of all) expect(p.nameKey).toBe(`page.${p.id}`);
   });
 
   it.skipIf(!CATALOG_COMPLETE)('has exactly 135 pages, 15 per theme', () => {
@@ -48,8 +49,10 @@ describe('catalog structure', () => {
 });
 
 describe.each(all.map((p) => [p.id, p] as const))('page %s', (_id, pg) => {
-  const rgba = rasterizeOutline(pg, SIZE, createCanvas);
-  const map = buildRegionMap(rgba, SIZE, SIZE);
+  let map: RegionMap;
+  beforeAll(() => {
+    map = buildRegionMap(rasterizeOutline(pg, SIZE, createCanvas), SIZE, SIZE);
+  });
 
   it('has at least 4 regions with area >= 600 px', () => {
     let big = 0;
