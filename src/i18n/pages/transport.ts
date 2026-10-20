@@ -13,7 +13,7 @@ export const pageNames = {
     'page.transport-11': 'Balão de ar quente',
     'page.transport-12': 'Submarino',
     'page.transport-13': 'Ambulância',
-    'page.transport-14': 'Lambreta',
+    'page.transport-14': 'Patinete',
     'page.transport-15': 'Rebocador',
   },
   en: {
@@ -30,7 +30,7 @@ export const pageNames = {
     'page.transport-11': 'Hot-air balloon',
     'page.transport-12': 'Submarine',
     'page.transport-13': 'Ambulance',
-    'page.transport-14': 'Scooter',
+    'page.transport-14': 'Kick scooter',
     'page.transport-15': 'Tugboat',
   },
   es: {
@@ -47,7 +47,7 @@ export const pageNames = {
     'page.transport-11': 'Globo aerostático',
     'page.transport-12': 'Submarino',
     'page.transport-13': 'Ambulancia',
-    'page.transport-14': 'Escúter',
+    'page.transport-14': 'Patinete',
     'page.transport-15': 'Remolcador',
   },
 } as const satisfies Record<'pt-BR' | 'en' | 'es', Record<string, string>>;

@@ -11,6 +11,15 @@ import type { PageDef, Pen } from '../types';
 const ey = (cx: number, cy: number, rx: number, ry: number, x: number, sign: 1 | -1) =>
   cy + sign * ry * Math.sqrt(Math.max(0, 1 - ((x - cx) / rx) ** 2));
 
+const star4 = (p: Pen, x: number, y: number, r: number) => p.star(x, y, r, r * 0.38, 4);
+
+const bar = (p: Pen, x1: number, y1: number, x2: number, y2: number, w: number) => {
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  const nx = (-Math.sin(a) * w) / 2;
+  const ny = (Math.cos(a) * w) / 2;
+  p.poly([[x1 + nx, y1 + ny], [x2 + nx, y2 + ny], [x2 - nx, y2 - ny], [x1 - nx, y1 - ny]]);
+};
+
 const smile = (p: Pen, x: number, y: number, w: number, d: number) =>
   p.path(`M${x - w} ${y} Q${x} ${y + d} ${x + w} ${y}`);
 
@@ -89,16 +98,19 @@ export const pages: PageDef[] = [
   }),
   // 4 — Airplane
   page('transport', 4, (p) => {
-    const C = [480, 500, 390, 115] as const;
+    const C = [480, 500, 400, 105] as const;
     p.ellipse(...C); // fuselage
-    p.poly([[430, 540], [320, 790], [440, 790], [620, 540]]); // wing
-    p.path(`M140 ${ey(...C, 140, -1)} L90 270 L210 270 L290 ${ey(...C, 290, -1)}`); // tail fin
-    for (const x of [230, 320, 410, 500, 590]) p.circle(x, 490, 25);
-    p.path('M700 470 Q760 400 830 460 L830 520 L700 520 Z'); // cockpit window
-    cloud(p, 200, 180, 1);
+    p.path(`M140 ${ey(...C, 140, -1)} L80 250 L190 250 L290 ${ey(...C, 290, -1)}`); // tail fin
+    p.path(`M200 ${ey(...C, 200, 1)} L130 650 L230 650 L300 ${ey(...C, 300, 1)}`); // stabilizer
+    p.path(`M520 ${ey(...C, 520, 1)} L360 800 L480 800 L680 ${ey(...C, 680, 1)}`); // wing
+    p.ellipse(430, 735, 70, 34); // engine
+    for (const x of [230, 320, 410, 500, 590]) p.circle(x, 500, 22);
+    p.path('M690 480 Q750 455 805 485 L805 525 L690 525 Z'); // cockpit window
+    p.ellipse(930, 500, 16, 85); // propeller
+    cloud(p, 200, 200, 1);
     cloud(p, 800, 300, 0.9);
-    cloud(p, 860, 800, 0.9);
-    cloud(p, 120, 850, 0.8);
+    cloud(p, 860, 850, 0.9);
+    cloud(p, 120, 880, 0.8);
   }),
   // 5 — Sailboat
   page('transport', 5, (p) => {
@@ -295,20 +307,19 @@ export const pages: PageDef[] = [
     wheel(p, 740, 700, 88);
     p.heart(500, 470, 100);
   }),
-  // 14 — Scooter
+  // 14 — Kick scooter
   page('transport', 14, (p) => {
-    wheel(p, 240, 740, 125, 45);
-    wheel(p, 790, 740, 125, 45);
-    p.roundRect(250, 420, 400, 160, 70); // body
-    p.roundRect(240, 340, 230, 90, 40); // seat
-    p.line(700, 300, 790, 740); // fork
-    p.line(640, 280, 760, 300); // handlebar
-    p.circle(705, 410, 46); // headlight
-    p.path('M670 660 Q790 570 910 660'); // fender
-    p.circle(540, 500, 34);
-    smile(p, 390, 500, 50, 30);
-    cloud(p, 260, 230, 1);
-    p.circle(830, 150, 60);
+    p.roundRect(170, 690, 640, 56, 28); // deck
+    wheel(p, 200, 810, 80, 30);
+    wheel(p, 810, 810, 80, 30);
+    bar(p, 750, 700, 700, 250, 44);
+    p.roundRect(540, 170, 320, 60, 30); // handlebar
+    p.circle(545, 200, 36); // grips
+    p.circle(855, 200, 36);
+    p.heart(400, 718, 36);
+    cloud(p, 250, 330, 1);
+    star4(p, 120, 120, 45);
+    star4(p, 880, 560, 40);
   }),
   // 15 — Tugboat
   page('transport', 15, (p) => {

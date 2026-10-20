@@ -47,37 +47,40 @@ const bar = (p: Pen, x1: number, y1: number, x2: number, y2: number, w1: number,
 export const pages: PageDef[] = [
   // 1 — Princess portrait
   page('princess', 1, (p) => {
-    const C = [500, 540, 225, 255] as const;
+    const C = [500, 520, 215, 245] as const;
     const at = (deg: number): [number, number] => [
       C[0] + C[2] * Math.cos((deg * Math.PI) / 180),
       C[1] + C[3] * Math.sin((deg * Math.PI) / 180),
     ];
     p.ellipse(...C); // face
-    const tl = at(-150);
-    const tr = at(-30);
-    p.path(
-      `M${tl[0]} ${tl[1]} Q285 190 500 180 Q715 190 ${tr[0]} ${tr[1]} Q620 330 500 330 Q380 330 ${tl[0]} ${tl[1]}`,
-    ); // hair on top with fringe
-    const l1 = at(180);
-    const l2 = at(125);
-    p.path(`M${l1[0]} ${l1[1] - 30} Q110 540 130 760 Q150 900 260 920 Q380 930 ${l2[0]} ${l2[1]}`); // left hair
-    p.path(
-      `M${1000 - l1[0]} ${l1[1] - 30} Q890 540 870 760 Q850 900 740 920 Q620 930 ${1000 - l2[0]} ${l2[1]}`,
-    );
-    crown(p, 500, 215, 190, 90);
-    p.circle(500, 170, 18);
-    p.ellipse(415, 520, 32, 40); // eyes
-    p.ellipse(585, 520, 32, 40);
-    p.circle(420, 530, 14);
-    p.circle(580, 530, 14);
-    p.path('M390 465 Q415 445 440 465'); // lashes-ish brows
-    p.path('M560 465 Q585 445 610 465');
-    p.path('M485 590 Q500 605 515 590'); // nose
-    smile(p, 500, 650, 60, 50);
-    p.circle(355, 610, 28);
-    p.circle(645, 610, 28);
-    star4(p, 100, 130, 45);
-    star4(p, 900, 130, 45);
+    const tl = at(-160);
+    const tr = at(-20);
+    p.path(`M${tl[0]} ${tl[1]} C230 80 770 80 ${tr[0]} ${tr[1]}`); // hair on top
+    p.path(`M${tl[0]} ${tl[1]} Q420 320 500 385 Q580 320 ${tr[0]} ${tr[1]}`); // fringe
+    const x1 = ey(500, 520, 215, 245, 400, 1);
+    p.path(`M400 ${x1} Q300 760 220 820 L180 960 L820 960 L780 820 Q700 760 600 ${x1}`); // shoulders
+    p.path(`M400 ${x1} Q500 830 600 ${x1}`); // neckline
+    const a = at(175);
+    const b = at(140);
+    p.path(`M${a[0]} ${a[1]} C160 520 120 720 150 870 Q190 930 260 860 Q330 780 ${b[0]} ${b[1]}`); // locks
+    p.path(`M${1000 - a[0]} ${a[1]} C840 520 880 720 850 870 Q810 930 740 860 Q670 780 ${1000 - b[0]} ${b[1]}`);
+    crown(p, 500, 200, 210, 90);
+    p.circle(500, 172, 16);
+    p.circle(440, 180, 12);
+    p.circle(560, 180, 12);
+    p.ellipse(410, 515, 32, 40);
+    p.ellipse(590, 515, 32, 40);
+    p.circle(416, 525, 14);
+    p.circle(584, 525, 14);
+    p.path('M385 460 Q410 440 435 460');
+    p.path('M565 460 Q590 440 615 460');
+    p.path('M485 585 Q500 600 515 585');
+    smile(p, 500, 645, 60, 48);
+    p.circle(350, 600, 28);
+    p.circle(650, 600, 28);
+    p.circle(500, 880, 28);
+    star4(p, 90, 130, 45);
+    star4(p, 910, 130, 45);
   }),
   // 2 — Crown
   page('princess', 2, (p) => {
