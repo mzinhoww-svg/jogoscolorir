@@ -1,4 +1,4 @@
-import { getDb, STORE } from './db';
+import { getDb, resetDb, STORE } from './db';
 import { ok, toError, type Result } from './result';
 
 export interface ArtworkRecord {
@@ -44,6 +44,16 @@ async function run<T>(
   try {
     return ok(await fn(await getDb()));
   } catch (e) {
+    // A cached connection that was closed behind our back throws InvalidStateError:
+    // reset it and retry exactly once on a fresh connection.
+    if (isObj(e) && e.name === 'InvalidStateError') {
+      resetDb();
+      try {
+        return ok(await fn(await getDb()));
+      } catch (e2) {
+        return toError(e2);
+      }
+    }
     return toError(e);
   }
 }

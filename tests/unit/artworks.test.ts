@@ -148,13 +148,53 @@ describe('failures never throw', () => {
     __setDbForTests(fakeDbThrowing(e));
     expect(await saveArtwork(rec('a-01', 1))).toMatchObject({ ok: false, error: 'quota' });
   });
-  it('InvalidStateError -> unavailable; other -> unknown', async () => {
+  it('InvalidStateError persisting after the retry -> unavailable; other -> unknown', async () => {
     __setDbForTests(fakeDbThrowing(new DOMException('c', 'InvalidStateError')));
+    (globalThis as { indexedDB: unknown }).indexedDB = undefined; // retry cannot reopen
     expect(await loadArtwork('a')).toMatchObject({ ok: false, error: 'unavailable' });
+    (globalThis as { indexedDB: unknown }).indexedDB = new IDBFactory();
     __setDbForTests(fakeDbThrowing(new Error('boom')));
     expect(await deleteAll()).toMatchObject({ ok: false, error: 'unknown' });
   });
   it('uses DB name pinta-mundo', () => {
     expect(DB_NAME).toBe('pinta-mundo');
+  });
+});
+
+describe('connection recovery', () => {
+  it('reopens after the connection is terminated or closed behind our back', async () => {
+    expect((await saveArtwork(rec('a-01', 1))).ok).toBe(true);
+    const db = await getDb();
+    db.close(); // cached connection is now dead: db.put throws InvalidStateError
+    const r = await saveArtwork(rec('a-02', 2)); // retried once on a fresh connection
+    expect(r.ok).toBe(true);
+    const l = await listArtworks();
+    expect(l.ok && l.value.map((x) => x.pageId).sort()).toEqual(['a-01', 'a-02']);
+  });
+  it('InvalidStateError retry happens only once', async () => {
+    let calls = 0;
+    const bad = {
+      put: () => {
+        calls++;
+        throw Object.assign(new Error('closed'), { name: 'InvalidStateError' });
+      },
+      close: () => undefined,
+    };
+    __setDbForTests(bad as unknown as Awaited<ReturnType<typeof getDb>>);
+    // first attempt uses bad db; retry reopens a real one and succeeds
+    expect((await saveArtwork(rec('a-01', 1))).ok).toBe(true);
+    expect(calls).toBe(1);
+  });
+  it('a blocking event closes and forgets the connection so the next call reopens', async () => {
+    const first = await getDb();
+    // another tab deletes/upgrades the DB -> versionchange -> our blocking() handler fires
+    await new Promise<void>((res, rej) => {
+      const req = indexedDB.deleteDatabase(DB_NAME);
+      req.onsuccess = () => res();
+      req.onerror = () => rej(req.error);
+    });
+    const next = await getDb();
+    expect(next).not.toBe(first);
+    expect((await saveArtwork(rec('a-01', 1))).ok).toBe(true);
   });
 });

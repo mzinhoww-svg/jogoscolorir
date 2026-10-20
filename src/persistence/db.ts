@@ -1,5 +1,4 @@
 import { openDB, type IDBPDatabase } from 'idb';
-import type { ArtworkRecord } from './artworks';
 
 export const DB_NAME = 'pinta-mundo';
 export const DB_VERSION = 1;
@@ -9,10 +8,22 @@ export type PintaDb = IDBPDatabase<unknown>;
 
 let dbPromise: Promise<PintaDb> | null = null;
 
+/** Drop the cached connection, but only if it is still the one that went bad. */
+function forget(p: Promise<PintaDb>): void {
+  if (dbPromise === p) dbPromise = null;
+}
+
+/** Drop the cached connection (closing it if possible) so the next call reopens. */
+export function resetDb(): void {
+  const p = dbPromise;
+  dbPromise = null;
+  p?.then((db) => db.close()).catch(() => undefined);
+}
+
 /** Lazily open the DB and cache the promise; on failure the cache is reset so a later call retries. */
 export function getDb(): Promise<PintaDb> {
   if (dbPromise) return dbPromise;
-  const p = (async () => {
+  const p: Promise<PintaDb> = (async () => {
     if (typeof indexedDB === 'undefined' || indexedDB === null) {
       throw Object.assign(new Error('indexedDB unavailable'), { name: 'SecurityError' });
     }
@@ -21,6 +32,16 @@ export function getDb(): Promise<PintaDb> {
         upgrade(db) {
           if (!db.objectStoreNames.contains(STORE))
             db.createObjectStore(STORE, { keyPath: 'pageId' });
+        },
+        // Browser killed the connection (e.g. storage cleared): reopen on the next call.
+        terminated() {
+          forget(p);
+        },
+        // Another tab wants to upgrade/delete: close ours and reopen lazily.
+        blocking() {
+          const cur = p;
+          forget(cur);
+          cur.then((db) => db.close()).catch(() => undefined);
         },
       })) as PintaDb;
     } catch (e) {
@@ -31,22 +52,16 @@ export function getDb(): Promise<PintaDb> {
     }
   })();
   dbPromise = p;
-  p.catch(() => {
-    if (dbPromise === p) dbPromise = null;
-  });
+  p.catch(() => forget(p));
   return p;
 }
 
 /** Test seam: drop the cached connection (closing it if open) so the next call re-opens. */
 export function __resetDbForTests(): void {
-  const p = dbPromise;
-  dbPromise = null;
-  p?.then((db) => db.close()).catch(() => undefined);
+  resetDb();
 }
 
 /** Test seam: inject a stand-in DB (e.g. one whose writes reject with QuotaExceededError). */
 export function __setDbForTests(db: PintaDb): void {
   dbPromise = Promise.resolve(db);
 }
-
-export type { ArtworkRecord };
