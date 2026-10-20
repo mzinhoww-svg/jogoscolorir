@@ -1,0 +1,28 @@
+:root {
+  --cream: #fff7ec;
+  --coral: #ff6b5a;
+  --orange: #ffa94d;
+  --yellow: #ffd43b;
+  --mint: #38d9a9;
+  --blue: #4dabf7;
+  --purple: #9775fa;
+  --ink: #2b2340;
+  --font: 'Baloo 2', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font);
+}
