@@ -4,6 +4,8 @@ import { audio } from '@/audio/audio';
 import { AppStateProvider, initialPrefs, useApp } from '@/ui/state/AppState';
 import { useRoute } from '@/ui/router';
 import { Toast } from '@/ui/components/Toast';
+import { saveQueue } from '@/ui/state/saveQueue';
+import { t } from '@/i18n';
 import { Home } from '@/ui/screens/Home';
 import { Themes } from '@/ui/screens/Themes';
 import { ThemePages } from '@/ui/screens/ThemePages';
@@ -29,8 +31,35 @@ function Screens() {
   }
 }
 
+/** Retry queued unsaved drawings on interaction, reconnect and when the app becomes visible. */
+function useSaveRetry(lang: Lang, showToast: (m: string, k?: 'info' | 'error') => void) {
+  useEffect(() => {
+    let last = 0;
+    const retry = () => {
+      const now = Date.now();
+      if (!saveQueue.hasPending() || now - last < 3000) return;
+      last = now;
+      void saveQueue.flushAll().then((ok) => {
+        if (!ok) showToast(t(lang, 'save.failed'), 'error');
+      });
+    };
+    const onVis = () => {
+      if (document.visibilityState === 'visible') retry();
+    };
+    window.addEventListener('pointerdown', retry);
+    window.addEventListener('online', retry);
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      window.removeEventListener('pointerdown', retry);
+      window.removeEventListener('online', retry);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [lang, showToast]);
+}
+
 function Shell() {
-  const { prefs, updatePrefs } = useApp();
+  const { prefs, updatePrefs, showToast } = useApp();
+  useSaveRetry(prefs.lang, showToast);
   const setLang = useCallback((l: Lang) => updatePrefs({ lang: l }), [updatePrefs]);
   useEffect(() => {
     document.documentElement.lang = prefs.lang;

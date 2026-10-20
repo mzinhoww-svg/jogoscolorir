@@ -4,7 +4,8 @@ import { PaintSession } from '@/engine/session';
 import { browserCanvasFactory } from '@/engine/canvasFactory';
 import { COLORS, SHINES, type Size, type ToolId } from '@/engine/tools';
 import type { PatternId } from '@/engine/patterns';
-import { loadArtwork, saveArtwork } from '@/persistence/artworks';
+import { loadArtwork } from '@/persistence/artworks';
+import { saveQueue, type Snapshot } from '@/ui/state/saveQueue';
 import { audio } from '@/audio/audio';
 import { pageName, useT } from '@/i18n';
 import { navigate } from '@/ui/router';
@@ -22,6 +23,16 @@ const DEFAULT_COLOR = COLORS[4] ?? '#E8423F';
 const DEFAULT_SHINE = SHINES[0]?.id ?? 'gold';
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'failed';
 
+/** Timeouts that are cancelled when the paint screen unmounts. */
+const fxTimers = new Set<ReturnType<typeof setTimeout>>();
+function later(cb: () => void, ms: number): void {
+  const id = setTimeout(() => {
+    fxTimers.delete(id);
+    cb();
+  }, ms);
+  fxTimers.add(id);
+}
+
 function celebrate(host: HTMLElement): void {
   if (prefersReducedMotion()) return;
   const colors = ['#FF6B5A', '#FFA94D', '#FFD43B', '#38D9A9', '#4DABF7', '#9775FA'];
@@ -38,7 +49,7 @@ function celebrate(host: HTMLElement): void {
     layer.appendChild(s);
   }
   host.appendChild(layer);
-  setTimeout(() => layer.remove(), 1600);
+  later(() => layer.remove(), 1600);
 }
 
 function fillPulse(host: HTMLElement, x: number, y: number, color: string): void {
@@ -50,7 +61,7 @@ function fillPulse(host: HTMLElement, x: number, y: number, color: string): void
   d.style.top = `${y}px`;
   d.style.background = color;
   host.appendChild(d);
-  setTimeout(() => d.remove(), 320);
+  later(() => d.remove(), 320);
 }
 
 export function Paint(props: { pageId: string }) {
@@ -65,9 +76,8 @@ export function Paint(props: { pageId: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sessionRef = useRef<PaintSession | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const savingRef = useRef<Promise<boolean> | null>(null);
   const needsSaveRef = useRef(false);
-  const failedRef = useRef(false);
+  const mountedRef = useRef(false);
   const createdAtRef = useRef<number | null>(null);
   const strokesRef = useRef(0);
   const downRef = useRef<{ x: number; y: number } | null>(null);
@@ -84,51 +94,41 @@ export function Paint(props: { pageId: string }) {
   const [confirmLeave, setConfirmLeave] = useState(false);
 
   /** Save now. Exports are snapshotted synchronously, so this is safe right before dispose. */
+  /** Synchronous snapshot of the current pixels (safe right before dispose). */
+  const snapshot = useCallback((session: PaintSession): Promise<Snapshot> => {
+    const pPaint = session.exportPaintPNG();
+    const pThumb = session.exportCompositePNG(256);
+    const now = Date.now();
+    if (createdAtRef.current === null) createdAtRef.current = now;
+    const createdAt = createdAtRef.current;
+    const strokes = strokesRef.current;
+    needsSaveRef.current = false;
+    return Promise.all([pPaint, pThumb]).then(([paint, thumb]) => ({
+      paint,
+      thumb,
+      createdAt,
+      updatedAt: now,
+      strokes,
+    }));
+  }, []);
+
   const saveNow = useCallback((): Promise<boolean> => {
-    function attempt(): Promise<boolean> {
-      const s = sessionRef.current;
-      clearTimeout(timerRef.current);
-      if (!s) return Promise.resolve(!failedRef.current);
-      // A save is in flight: chain one more after it, with the latest pixels.
-      if (savingRef.current) return savingRef.current.then(attempt);
-      needsSaveRef.current = false;
-      setStatus('saving');
-      const pPaint = s.exportPaintPNG();
-      const pThumb = s.exportCompositePNG(256);
-      const run = (async () => {
-        try {
-          const [paint, thumb] = await Promise.all([pPaint, pThumb]);
-          const now = Date.now();
-          const r = await saveArtwork({
-            schema: 1,
-            pageId,
-            paint,
-            thumb,
-            createdAt: createdAtRef.current ?? now,
-            updatedAt: now,
-            strokes: strokesRef.current,
-          });
-          if (!r.ok) throw new Error(r.error);
-          if (createdAtRef.current === null) createdAtRef.current = now;
-          failedRef.current = false;
-          if (!needsSaveRef.current) sessionRef.current?.markClean();
-          setStatus('saved');
-          return true;
-        } catch {
-          failedRef.current = true;
-          needsSaveRef.current = true;
-          setStatus('failed');
-          audio.play('error');
-          return false;
-        } finally {
-          savingRef.current = null;
-        }
-      })();
-      savingRef.current = run;
-      return run;
-    }
-    return attempt();
-  }, [pageId]);
+    clearTimeout(timerRef.current);
+    const s = sessionRef.current;
+    if (!s) return Promise.resolve(!needsSaveRef.current && !saveQueue.get(pageId));
+    if (mountedRef.current) setStatus('saving');
+    const p = needsSaveRef.current
+      ? saveQueue.enqueueAsync(pageId, snapshot(s))
+      : saveQueue.flush(pageId);
+    return p.then((ok) => {
+      if (mountedRef.current) {
+        setStatus(ok ? 'saved' : 'failed');
+        if (ok && !needsSaveRef.current) sessionRef.current?.markClean();
+        if (!ok) audio.play('error');
+      }
+      return ok;
+    });
+  }, [pageId, snapshot]);
 
   const scheduleSave = useCallback(() => {
     needsSaveRef.current = true;
@@ -175,7 +175,10 @@ export function Paint(props: { pageId: string }) {
     fit();
     const ro = new ResizeObserver(fit);
     ro.observe(stage);
-    const onOrient = () => setTimeout(fit, 120);
+    const onOrient = () =>
+      setTimeout(() => {
+        if (alive) fit();
+      }, 120);
     window.addEventListener('orientationchange', onOrient);
 
     // Pointer wiring: native events straight to the session, no React state per move.
@@ -204,13 +207,22 @@ export function Paint(props: { pageId: string }) {
 
     // Reopen: draw the saved paint, then mark ready.
     void (async () => {
-      const r = await loadArtwork(pageId);
+      // Unsaved snapshots in the queue win over the DB copy; try to persist them first.
+      await saveQueue.latest(pageId);
+      await saveQueue.flush(pageId);
+      const queued = saveQueue.get(pageId);
+      const r = queued ? null : await loadArtwork(pageId);
       if (!alive) return;
-      if (r.ok && r.value) {
-        createdAtRef.current = r.value.createdAt;
-        strokesRef.current = r.value.strokes;
+      const rec = queued ?? (r && r.ok ? r.value : null);
+      if (queued) {
+        needsSaveRef.current = false;
+        setStatus('failed');
+      }
+      if (rec) {
+        createdAtRef.current = rec.createdAt;
+        strokesRef.current = rec.strokes;
         try {
-          const bmp = await createImageBitmap(r.value.paint);
+          const bmp = await createImageBitmap(rec.paint);
           if (!alive) return;
           session.loadPaint(bmp);
           bmp.close?.();
@@ -224,17 +236,20 @@ export function Paint(props: { pageId: string }) {
     })();
 
     const onHidden = () => {
-      if (document.visibilityState === 'hidden' && (needsSaveRef.current || failedRef.current))
-        void saveNow();
+      if (document.visibilityState === 'hidden') void saveNow();
     };
     const onPageHide = () => {
-      if (needsSaveRef.current || failedRef.current) void saveNow();
+      void saveNow();
     };
     document.addEventListener('visibilitychange', onHidden);
     window.addEventListener('pagehide', onPageHide);
 
+    mountedRef.current = true;
     return () => {
       alive = false;
+      mountedRef.current = false;
+      for (const id of fxTimers) clearTimeout(id);
+      fxTimers.clear();
       ro.disconnect();
       window.removeEventListener('orientationchange', onOrient);
       document.removeEventListener('visibilitychange', onHidden);
@@ -246,12 +261,16 @@ export function Paint(props: { pageId: string }) {
       canvas.removeEventListener('lostpointercapture', lost);
       canvas.removeEventListener('contextmenu', noMenu);
       // Leaving the paint screen (e.g. browser back): save immediately, warn on failure.
-      if (needsSaveRef.current || failedRef.current) {
-        void saveNow().then((ok) => {
-          if (!ok) showToast(t('save.failed'), 'error');
-        });
-      }
+      // Leaving (e.g. browser back): snapshot BEFORE dispose; the queue owns the save from here.
       clearTimeout(timerRef.current);
+      const p = needsSaveRef.current
+        ? saveQueue.enqueueAsync(pageId, snapshot(session))
+        : saveQueue.get(pageId)
+          ? saveQueue.flush(pageId)
+          : null;
+      void p?.then((ok) => {
+        if (!ok) showToast(t('save.failed'), 'error');
+      });
       sessionRef.current = null;
       session.dispose();
     };
@@ -309,7 +328,7 @@ export function Paint(props: { pageId: string }) {
   };
   const back = async () => {
     const target = `#/tema/${themeId}`;
-    if (needsSaveRef.current || failedRef.current || savingRef.current) {
+    if (needsSaveRef.current || saveQueue.get(pageId)) {
       const ok = await saveNow();
       if (!ok) {
         setConfirmLeave(true);
