@@ -42,10 +42,14 @@ class MockOsc {
 }
 class MockGain {
   gain = new Param();
-  connect() {
+  targets = new Set<unknown>();
+  connect(dest?: unknown) {
+    if (dest) this.targets.add(dest);
     return this;
   }
-  disconnect() {}
+  disconnect() {
+    this.targets.clear();
+  }
 }
 class MockCtx {
   static instances: MockCtx[] = [];
@@ -225,5 +229,26 @@ describe('audio', () => {
     expect(ctx.oscillators.length).toBeGreaterThan(100);
     expect(a._musicOscCount()).toBeLessThanOrEqual(0);
     expect(maxLive).toBeLessThan(80);
+  });
+
+  it('toggling music N times leaves at most one music bus connected to master', () => {
+    const a = createAudio({ AudioContextCtor: Ctor, doc: fakeDoc() });
+    a.setVolumes({ music: false, sfx: true, volume: 1 });
+    a.unlock();
+    const ctx = MockCtx.instances[0]!;
+    const master = ctx.gains[0]!;
+    for (let i = 0; i < 6; i++) {
+      a.setMusic(true);
+      a.setMusic(false);
+    }
+    a.setMusic(true);
+    vi.advanceTimersByTime(500);
+    const connected = ctx.gains.filter((g) => g !== master && g.targets.has(master));
+    // sfx bus + the single live music bus
+    expect(connected.length).toBeLessThanOrEqual(2);
+    a.setMusic(false);
+    vi.advanceTimersByTime(500);
+    const after = ctx.gains.filter((g) => g !== master && g.targets.has(master));
+    expect(after.length).toBe(1); // only the sfx bus
   });
 });

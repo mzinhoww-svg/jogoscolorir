@@ -130,6 +130,16 @@ export function createAudio(opts: AudioOptions = {}) {
       }
     }
     musicOsc.clear();
+    if (bus) {
+      // Detach the old bus once its fade-out is done so buses never pile up on master.
+      setTimeout(() => {
+        try {
+          bus.disconnect();
+        } catch {
+          /* already disconnected */
+        }
+      }, 120);
+    }
     musicBus = null;
   }
 
