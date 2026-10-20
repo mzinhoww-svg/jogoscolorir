@@ -50,7 +50,7 @@ export const es: Dict = {
   'tool.marker': 'Marcador',
   'tool.pencil': 'Lápiz',
   'tool.brush': 'Pincel',
-  'tool.bucket': 'Cubo',
+  'tool.bucket': 'Cubo de pintura',
   'tool.spray': 'Spray',
   'tool.shine': 'Brillo',
   'tool.pattern': 'Patrón',

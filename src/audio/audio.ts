@@ -47,7 +47,8 @@ export function createAudio(opts: AudioOptions = {}) {
   let sfxBus: GainNode | null = null;
   const flags: Volumes = { music: false, sfx: true, volume: 0.7 };
 
-  let musicOsc: OscillatorNode[] = [];
+  const musicOsc = new Set<OscillatorNode>();
+  let nextStart = 0;
   let musicTimer: ReturnType<typeof setTimeout> | null = null;
   let musicRunning = false;
 
@@ -61,6 +62,7 @@ export function createAudio(opts: AudioOptions = {}) {
     dur: number,
     peak: number,
     slideTo?: number,
+    onEnd?: (o: OscillatorNode) => void,
   ): OscillatorNode | null {
     if (!ctx) return null;
     const osc = ctx.createOscillator();
@@ -73,45 +75,78 @@ export function createAudio(opts: AudioOptions = {}) {
     g.gain.linearRampToValueAtTime(0, start + dur);
     osc.connect(g);
     g.connect(dest);
+    osc.onended = () => {
+      onEnd?.(osc);
+      try {
+        osc.disconnect();
+        g.disconnect();
+      } catch {
+        /* already disconnected */
+      }
+    };
     osc.start(start);
     osc.stop(start + dur + 0.02);
     return osc;
   }
 
+  const forget = (o: OscillatorNode) => void musicOsc.delete(o);
+
   function scheduleLoop() {
     if (!ctx || !musicBus || !musicRunning) return;
-    const t0 = ctx.currentTime + 0.05;
+    const t0 = Math.max(nextStart, ctx.currentTime + 0.05);
+    const bus = musicBus;
+    const add = (o: OscillatorNode | null) => {
+      if (o) musicOsc.add(o);
+    };
     MELODY.forEach((n, i) => {
       if (n < 0) return;
-      const o = tone(musicBus!, 'sine', P[n]!, t0 + i * STEP, STEP * 0.9, 0.6);
-      if (o) musicOsc.push(o);
+      add(tone(bus, 'sine', P[n]!, t0 + i * STEP, STEP * 0.9, 0.6, undefined, forget));
     });
     BASS.forEach((n, i) => {
-      const o = tone(musicBus!, 'triangle', P[n]! / 2, t0 + i * STEP * 4, STEP * 3.6, 0.45);
-      if (o) musicOsc.push(o);
+      add(tone(bus, 'triangle', P[n]! / 2, t0 + i * STEP * 4, STEP * 3.6, 0.45, undefined, forget));
     });
-    musicTimer = setTimeout(scheduleLoop, LOOP * 1000);
+    nextStart = t0 + LOOP;
+    // wake ~1 s before the loop ends, driven by the audio clock rather than a fixed period
+    const delay = Math.max(0, (nextStart - ctx.currentTime - 1) * 1000);
+    musicTimer = setTimeout(scheduleLoop, delay);
   }
 
   function stopMusic() {
     musicRunning = false;
     if (musicTimer !== null) clearTimeout(musicTimer);
     musicTimer = null;
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const bus = musicBus;
+    if (bus) {
+      bus.gain.setValueAtTime(bus.gain.value, now);
+      bus.gain.linearRampToValueAtTime(0, now + 0.04);
+    }
     for (const o of musicOsc) {
       try {
-        o.stop();
-        o.disconnect();
+        o.stop(now + 0.06);
       } catch {
         /* already stopped */
       }
     }
-    musicOsc = [];
+    musicOsc.clear();
+    musicBus = null;
   }
 
   function startMusic() {
-    if (!ctx || musicRunning || !flags.music || doc?.hidden) return;
+    if (!ctx || !master || musicRunning || !flags.music || doc?.hidden) return;
     musicRunning = true;
+    musicBus = ctx.createGain();
+    musicBus.gain.value = MUSIC_LEVEL;
+    musicBus.connect(master);
+    nextStart = 0;
     scheduleLoop();
+  }
+
+  function setMusic(on: boolean): void {
+    flags.music = on;
+    if (on) startMusic();
+    else stopMusic();
   }
 
   function applyVolume() {
@@ -158,11 +193,8 @@ export function createAudio(opts: AudioOptions = {}) {
           return;
         }
         master = ctx.createGain();
-        musicBus = ctx.createGain();
         sfxBus = ctx.createGain();
-        musicBus.gain.value = MUSIC_LEVEL;
         sfxBus.gain.value = SFX_LEVEL;
-        musicBus.connect(master);
         sfxBus.connect(master);
         master.connect(ctx.destination);
         applyVolume();
@@ -174,16 +206,14 @@ export function createAudio(opts: AudioOptions = {}) {
       if (!ctx || !sfxBus || !flags.sfx) return;
       EFFECTS[name](ctx.currentTime + 0.005, sfxBus);
     },
-    setMusic(on: boolean): void {
-      flags.music = on;
-      if (on) startMusic();
-      else stopMusic();
-    },
+    setMusic,
+    /** test hook: live scheduled music oscillators */
+    _musicOscCount: (): number => musicOsc.size,
     setVolumes(v: Volumes): void {
       flags.sfx = v.sfx;
       flags.volume = clamp01(v.volume);
       applyVolume();
-      this.setMusic(v.music);
+      setMusic(v.music);
     },
   };
 }

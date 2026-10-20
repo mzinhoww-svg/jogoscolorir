@@ -35,6 +35,7 @@ class MockOsc {
   start() {
     this.started = true;
   }
+  onended: (() => void) | null = null;
   stop() {
     this.stopped = true;
   }
@@ -145,9 +146,9 @@ describe('audio', () => {
     a.unlock();
     const ctx = MockCtx.instances[0]!;
     expect(ctx.oscillators.length).toBeGreaterThan(0);
-    // gains[0] master (= volume), gains[1] music bus
-    expect(ctx.gains[1]!.gain.value).toBeLessThanOrEqual(0.15);
-    expect(ctx.gains[1]!.gain.value).toBeGreaterThan(0);
+    // gains[0] master (= volume), gains[1] sfx bus, gains[2] music bus
+    expect(ctx.gains[2]!.gain.value).toBeLessThanOrEqual(0.15);
+    expect(ctx.gains[2]!.gain.value).toBeGreaterThan(0);
     a.setMusic(false);
     expect(ctx.oscillators.every((o) => o.stopped)).toBe(true);
     const n = ctx.oscillators.length;
@@ -198,5 +199,31 @@ describe('audio', () => {
       a.play('click');
       a.setMusic(true);
     }).not.toThrow();
+  });
+
+  it('sfx output follows volume (routed through master)', () => {
+    const a = createAudio({ AudioContextCtor: Ctor, doc: fakeDoc() });
+    a.setVolumes({ music: false, sfx: true, volume: 0.2 });
+    a.unlock();
+    a.play('click');
+    expect(MockCtx.instances[0]!.gains[0]!.gain.value).toBeCloseTo(0.2);
+    a.setVolumes({ music: false, sfx: true, volume: 0.6 });
+    expect(MockCtx.instances[0]!.gains[0]!.gain.value).toBeCloseTo(0.6);
+  });
+
+  it('does not accumulate finished music oscillators across loops', () => {
+    const a = createAudio({ AudioContextCtor: Ctor, doc: fakeDoc() });
+    a.setVolumes({ music: true, sfx: false, volume: 1 });
+    a.unlock();
+    const ctx = MockCtx.instances[0]!;
+    let maxLive = 0;
+    for (let i = 0; i < 20; i++) {
+      vi.advanceTimersByTime(8000);
+      maxLive = Math.max(maxLive, a._musicOscCount());
+      for (const o of ctx.oscillators) o.onended?.();
+    }
+    expect(ctx.oscillators.length).toBeGreaterThan(100);
+    expect(a._musicOscCount()).toBeLessThanOrEqual(0);
+    expect(maxLive).toBeLessThan(80);
   });
 });
