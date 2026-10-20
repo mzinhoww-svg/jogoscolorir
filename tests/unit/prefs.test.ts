@@ -36,7 +36,9 @@ describe('prefs', () => {
     expect(loadPrefs()).toEqual(DEFAULT_PREFS);
   });
   it('merges field by field and validates', () => {
-    stubStorage({ [KEY]: JSON.stringify({ v: 1, lang: 'fr', music: false, sfx: 'yes', volume: 5 }) });
+    stubStorage({
+      [KEY]: JSON.stringify({ v: 1, lang: 'fr', music: false, sfx: 'yes', volume: 5 }),
+    });
     expect(loadPrefs()).toEqual({ v: 1, lang: 'pt-BR', music: false, sfx: true, volume: 1 });
     stubStorage({ [KEY]: JSON.stringify({ v: 1, lang: 'en', volume: -3 }) });
     expect(loadPrefs()).toEqual({ ...DEFAULT_PREFS, lang: 'en', volume: 0 });

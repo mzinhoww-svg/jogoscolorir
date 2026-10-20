@@ -70,7 +70,13 @@ describe('migration', () => {
   it('migrateRecord schema 1 passes, schema 0 converts, others null', () => {
     const r = rec('a-01', 5);
     expect(migrateRecord(r)).toEqual(r);
-    const legacy = { pageId: 'a-01', paintPng: blob('x'), thumb: blob('t'), createdAt: 1, updatedAt: 2 };
+    const legacy = {
+      pageId: 'a-01',
+      paintPng: blob('x'),
+      thumb: blob('t'),
+      createdAt: 1,
+      updatedAt: 2,
+    };
     const m = migrateRecord({ schema: 0, ...legacy });
     expect(m?.schema).toBe(1);
     expect(m?.paint).toBe(legacy.paintPng);
@@ -82,7 +88,14 @@ describe('migration', () => {
   });
   it('load/list skip invalid and migrate legacy records', async () => {
     await putRaw({ schema: 99, pageId: 'future-01' });
-    await putRaw({ schema: 0, pageId: 'old-01', paintPng: blob('x'), thumb: blob('t'), createdAt: 1, updatedAt: 9 });
+    await putRaw({
+      schema: 0,
+      pageId: 'old-01',
+      paintPng: blob('x'),
+      thumb: blob('t'),
+      createdAt: 1,
+      updatedAt: 9,
+    });
     await saveArtwork(rec('ok-01', 5));
     const l = await listArtworks();
     expect(l.ok && l.value.map((x) => x.pageId)).toEqual(['old-01', 'ok-01']);
