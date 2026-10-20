@@ -92,8 +92,9 @@ export function regionMask(map: RegionMap, label: number, dilate = 2): Uint8Arra
   const { width: w, height: h, labels } = map;
   const mask = new Uint8Array(w * h);
   for (let i = 0; i < mask.length; i++) if (labels[i] === label) mask[i] = 1;
+  const add = new Int32Array(w * h);
   for (let step = 0; step < dilate; step++) {
-    const add: number[] = [];
+    let na = 0;
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const p = y * w + x;
@@ -104,10 +105,10 @@ export function regionMask(map: RegionMap, label: number, dilate = 2): Uint8Arra
           (y > 0 && mask[p - w]) ||
           (y < h - 1 && mask[p + w])
         )
-          add.push(p);
+          add[na++] = p;
       }
     }
-    for (const p of add) mask[p] = 1;
+    for (let i = 0; i < na; i++) mask[add[i]!] = 1;
   }
   return mask;
 }

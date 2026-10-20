@@ -9,6 +9,7 @@ import { makePattern } from './patterns';
 
 export const LOGICAL = 1000;
 const TAP_SLOP = 6;
+const MASK_CACHE = 6;
 
 export type PointerLike = Pick<
   PointerEvent,
@@ -69,6 +70,9 @@ export class PaintSession {
   private brush: Brush = { ...DEFAULT_BRUSH };
   private active: Active | null = null;
   private mask: MaskInfo | null = null;
+  private maskCache = new Map<number, MaskInfo>();
+  /** Number of region masks built (cache misses); exposed for tests. */
+  maskBuilds = 0;
   private transform: ViewTransform;
   private framePending = false;
   private dirty = false;
@@ -174,9 +178,22 @@ export class PaintSession {
 
   // ---- masks ----
   private maskFor(label: number): MaskInfo {
-    if (this.mask && this.mask.label === label) return this.mask;
+    const hit = this.maskCache.get(label);
+    if (hit) {
+      this.maskCache.delete(label);
+      this.maskCache.set(label, hit);
+      this.mask = hit;
+      return hit;
+    }
+    this.maskBuilds++;
     const m = regionMask(this.regions, label, 2);
-    const c = this.mask?.canvas ?? this.opts.factory.create(LOGICAL, LOGICAL);
+    let c: AnyCanvas;
+    if (this.maskCache.size >= MASK_CACHE) {
+      const oldest = this.maskCache.keys().next().value as number;
+      c = this.maskCache.get(oldest)!.canvas;
+      this.maskCache.delete(oldest);
+      ctx2d(c).clearRect(0, 0, LOGICAL, LOGICAL);
+    } else c = this.opts.factory.create(LOGICAL, LOGICAL);
     const ctx = ctx2d(c);
     const img = ctx.createImageData(LOGICAL, LOGICAL);
     let x0 = LOGICAL;
@@ -195,6 +212,7 @@ export class PaintSession {
     }
     ctx.putImageData(img, 0, 0);
     this.mask = { label, canvas: c, rect: { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 } };
+    this.maskCache.set(label, this.mask);
     return this.mask;
   }
 
@@ -227,7 +245,8 @@ export class PaintSession {
   // ---- pointer gestures ----
   private point(e: PointerLike): StrokePoint {
     const { x, y } = this.transform.toLogical(e.clientX, e.clientY);
-    return { x, y, p: e.pointerType === 'pen' ? e.pressure : -1 };
+    // Some styluses report pressure 0 at down/hover: treat p<=0 as unknown (speed-based width).
+    return { x, y, p: e.pointerType === 'pen' && e.pressure > 0 ? e.pressure : -1 };
   }
 
   pointerDown(e: PointerLike): void {
@@ -413,6 +432,7 @@ export class PaintSession {
     this.disposed = true;
     this.active = null;
     this.mask = null;
+    this.maskCache.clear();
     this.history.clear();
     for (const c of [this.paint, this.scratch, this.outline]) {
       c.width = 1;

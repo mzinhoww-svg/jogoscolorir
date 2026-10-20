@@ -3,6 +3,7 @@ import { PaintSession, type PaintSessionOptions } from '@/engine/session';
 import { History } from '@/engine/history';
 import {
   napiFactory,
+  pageOf,
   squarePage,
   splitPage,
   ringPage,
@@ -265,5 +266,79 @@ describe('PaintSession', () => {
     const p2 = await h.s.exportCompositePNG(256);
     expect(p1.size).toBeGreaterThan(100);
     expect(p2.type).toBe('image/png');
+  });
+
+  it('resize and dpr change mid-stroke: stroke continues, earlier paint intact, one entry', () => {
+    const h = make(squarePage);
+    stroke(h.s, [
+      [200, 200],
+      [300, 200],
+    ]);
+    const first = h.s.getPaintImageData();
+    h.s.pointerDown(ptr(200, 600));
+    h.s.pointerMove(ptr(300, 600));
+    h.setRect({ left: 50, top: 50, width: 500, height: 500 });
+    h.setDpr(2);
+    h.s.resize();
+    expect(h.canvas.width).toBe(1000);
+    // new rect: client (50+200, 50+300) -> logical (400, 600)
+    h.s.pointerMove(ptr(250, 350));
+    h.s.pointerUp(ptr(250, 350));
+    const img = h.s.getPaintImageData();
+    expect(h.s.historySize).toBe(2);
+    expect(alphaAt(img, 350, 600)).toBe(255);
+    expect(countAlpha(img, 180, 180, 320, 220)).toBe(countAlpha(first, 180, 180, 320, 220));
+    for (let y = 180; y < 220; y++)
+      for (let x = 180; x < 320; x++) expect(alphaAt(img, x, y)).toBe(alphaAt(first, x, y));
+  });
+
+  it('pen with pressure 0 still paints visible pixels', () => {
+    for (const tool of ['brush', 'pencil', 'marker'] as const) {
+      const h = make(squarePage);
+      h.s.setBrush({ tool });
+      const pen = { pointerType: 'pen', pressure: 0 };
+      h.s.pointerDown(ptr(300, 300, pen));
+      for (let i = 1; i <= 10; i++) h.s.pointerMove(ptr(300 + i * 20, 300, pen));
+      h.s.pointerUp(ptr(500, 300, pen));
+      expect(countAlpha(h.s.getPaintImageData(), 290, 280, 510, 320), tool).toBeGreaterThan(300);
+    }
+  });
+
+  it('repeated gestures in the same region reuse the cached mask', () => {
+    const h = make(splitPage);
+    stroke(h.s, [
+      [300, 300],
+      [320, 300],
+    ]);
+    stroke(h.s, [
+      [700, 300],
+      [720, 300],
+    ]);
+    expect(h.s.maskBuilds).toBe(2);
+    for (let i = 0; i < 5; i++)
+      stroke(h.s, [
+        [300, 400 + i * 10],
+        [320, 400 + i * 10],
+      ]);
+    stroke(h.s, [
+      [700, 500],
+      [720, 500],
+    ]);
+    expect(h.s.maskBuilds).toBe(2);
+  });
+
+  it('gesture starting deep inside a thick line block (no region within 12 px) is ignored', () => {
+    const block = pageOf('test-04', (p) => {
+      p.rect(100, 100, 800, 800);
+      for (let y = 400; y <= 460; y += 3) p.line(300, y, 700, y);
+    });
+    const h = make(block);
+    expect(h.s.regionMap.labels[430 * 1000 + 500]).toBe(0);
+    h.s.pointerDown(ptr(500, 430));
+    h.s.pointerMove(ptr(520, 430));
+    h.s.pointerUp(ptr(520, 430));
+    expect(h.commits()).toBe(0);
+    expect(h.s.historySize).toBe(0);
+    expect(countAlpha(h.s.getPaintImageData(), 0, 0, 1000, 1000)).toBe(0);
   });
 });
