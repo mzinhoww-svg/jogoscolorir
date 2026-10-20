@@ -1,16 +1,19 @@
 import { expect, test } from '@playwright/test';
+import { toolWidth } from '../../src/engine/tools';
 import {
+  analyzeStroke,
   changeSignature,
+  changedSince,
   findBlankRects,
+  frames,
+  type Rect,
+  type StrokeAnalysis,
   openPage,
   snap,
   stroke,
   tap,
-  pixelAt,
   type Signature,
 } from './helpers';
-
-const TOOLS = ['marker', 'pencil', 'brush', 'bucket', 'spray', 'shine', 'pattern'] as const;
 
 test('1. opens the game and selects a page', async ({ page }) => {
   await openPage(page, 'animals', 'animals-01');
@@ -33,62 +36,114 @@ test('1. opens the game and selects a page', async ({ page }) => {
 });
 
 test('2+3. every tool paints and each result is distinct', async ({ page }) => {
+  // One page for all tools: seven outline-free areas on the same drawing (fair comparison).
+  let rects: Rect[] = [];
+  let pageId = '';
+  for (let n = 1; n <= 15 && rects.length < 7; n++) {
+    pageId = `animals-${String(n).padStart(2, '0')}`;
+    await openPage(page, 'animals', pageId);
+    rects = await findBlankRects(page, 7, 240, 100);
+  }
+  expect(rects.length, 'a page with seven blank areas').toBe(7);
+  const RED = '#E8423F'; // default colour
   const results: Record<string, Signature> = {};
-  // Seven separate fresh pages so each tool paints on a clean, known-blank area.
-  const pages = [
-    'animals-01',
-    'animals-02',
-    'animals-03',
-    'animals-04',
-    'animals-05',
-    'animals-06',
-    'animals-07',
-  ];
-  for (const [i, tool] of TOOLS.entries()) {
-    await openPage(page, 'animals', pages[i]!);
-    const [r] = await findBlankRects(page, 1, 240, 100);
-    expect(r, `blank area on ${pages[i]}`).toBeTruthy();
+  const shapes: Record<string, StrokeAnalysis> = {};
+  // Bucket last: it floods the background region, which may contain the other strokes.
+  const order = ['marker', 'pencil', 'brush', 'spray', 'shine', 'pattern', 'bucket'] as const;
+  let bucketTotal = 0;
+  for (const [i, tool] of order.entries()) {
+    const r = rects[i]!;
     await page.getByTestId(`tool-${tool}`).click();
     await expect(page.getByTestId(`tool-${tool}`)).toHaveAttribute('aria-pressed', 'true');
+    if (tool === 'shine') await page.getByTestId('shine-rainbow').click();
+    if (tool === 'pattern') await page.getByTestId('pattern-stripes').click();
     await snap(page, `before-${tool}`);
-    const cy = r!.y + r!.h / 2;
+    const cy = r.y + r.h / 2;
     if (tool === 'bucket') {
-      await tap(page, { x: r!.x + r!.w / 2, y: cy });
-    } else {
+      await tap(page, { x: r.x + r.w / 2, y: cy });
+    } else
       await stroke(page, [
-        { x: r!.x + 30, y: cy },
-        { x: r!.x + r!.w / 2, y: cy - 10 },
-        { x: r!.x + r!.w - 30, y: cy },
+        { x: r.x + 20, y: cy },
+        { x: r.x + r.w - 20, y: cy },
       ]);
-    }
-    // Wait for the committed render, then measure inside the stroke area.
     await expect
-      .poll(async () => (await changeSignature(page, `before-${tool}`, r!)).changed)
+      .poll(async () => (await changeSignature(page, `before-${tool}`, r)).changed, {
+        message: `${tool} on ${pageId} at ${JSON.stringify(r)}`,
+      })
       .toBeGreaterThan(200);
-    results[tool] = await changeSignature(page, `before-${tool}`, r!);
-    // Sanity: the pixel under the middle of the gesture is no longer white.
-    const mid = await pixelAt(page, { x: r!.x + r!.w / 2, y: cy - 5 });
-    if (tool !== 'spray') expect(mid.slice(0, 3)).not.toEqual([255, 255, 255]);
+    await frames(page);
+    results[tool] = await changeSignature(page, `before-${tool}`, r);
+    if (tool === 'bucket') bucketTotal = await changedSince(page, `before-${tool}`);
+    else {
+      const w = toolWidth(tool, 'm');
+      shapes[tool] = await analyzeStroke(page, `before-${tool}`, r, cy, {
+        color: RED,
+        bandHalf: (w / 2) * 0.7,
+        coreHalf: w / 4,
+      });
+    }
   }
-  test.info().annotations.push({ type: 'signatures', description: JSON.stringify(results) });
+  test.info().annotations.push({
+    type: 'signatures',
+    description: JSON.stringify({ results, shapes, bucketTotal }),
+  });
 
-  const differs = (a: Signature, b: Signature) => {
-    const countRatio = Math.max(a.changed, b.changed) / Math.max(1, Math.min(a.changed, b.changed));
-    const meanDist = Math.hypot(
-      a.mean[0] - b.mean[0],
-      a.mean[1] - b.mean[1],
-      a.mean[2] - b.mean[2],
-    );
-    const varRatio =
-      (Math.max(a.variance, b.variance) + 1) / (Math.min(a.variance, b.variance) + 1);
-    const distinctRatio =
-      Math.max(a.distinct, b.distinct) / Math.max(1, Math.min(a.distinct, b.distinct));
-    return countRatio > 1.2 || meanDist > 12 || varRatio > 1.5 || distinctRatio > 1.5;
+  const { marker, pencil, brush, spray, shine, pattern } = shapes as Record<string, StrokeAnalysis>;
+  // Marker: solid single colour, full coverage along the stroke.
+  expect(marker!.coreVariance).toBeLessThan(10);
+  expect(marker!.bandCoverage).toBeGreaterThan(0.97);
+  expect(marker!.components).toBe(1);
+  expect(marker!.alternations).toBeLessThanOrEqual(1);
+  // Pencil: thinner and grainy.
+  expect(pencil!.width).toBeLessThan(marker!.width * 0.7);
+  expect(pencil!.coreVariance).toBeGreaterThan(marker!.coreVariance + 300);
+  // Brush: soft, blended edges.
+  expect(brush!.blended).toBeGreaterThan(marker!.blended * 2);
+  expect(brush!.blended).toBeGreaterThan(0.3);
+  // Bucket: fills the whole region.
+  expect(bucketTotal).toBeGreaterThanOrEqual(5 * results['marker']!.changed);
+  expect(results['bucket']!.variance).toBeLessThan(5);
+  // Spray: gaps and scattered dots.
+  expect(spray!.bandCoverage).toBeLessThan(0.7);
+  expect(spray!.components).toBeGreaterThan(10);
+  // Shine: several hues (gradient) plus near-white sparkles.
+  expect(shine!.hueBins).toBeGreaterThanOrEqual(3);
+  expect(shine!.sparkles).toBeGreaterThan(5);
+  expect(marker!.sparkles).toBe(0);
+  expect(brush!.sparkles).toBe(0);
+  // Pattern: two clearly different colours alternating along the stroke.
+  expect(pattern!.alternations).toBeGreaterThanOrEqual(4);
+  expect(pattern!.clusterDist).toBeGreaterThan(80);
+
+  // Pairwise: each pair differs in at least two independent metrics.
+  const metrics = (t: (typeof order)[number]) => {
+    const sg = results[t]!;
+    const sh = shapes[t];
+    return {
+      count: t === 'bucket' ? bucketTotal : sg.changed,
+      mean: sg.mean,
+      variance: sg.variance,
+      distinct: sg.distinct,
+      coverage: sh ? sh.bandCoverage : 1,
+      components: sh ? sh.components : 1,
+    };
   };
-  for (let i = 0; i < TOOLS.length; i++)
-    for (let j = i + 1; j < TOOLS.length; j++) {
-      const a = TOOLS[i]!;
-      const b = TOOLS[j]!;
-      expect(differs(results[a]!, results[b]!), `${a} vs ${b}`).toBe(true);
+  const ratio = (a: number, b: number) => (Math.max(a, b) + 1) / (Math.min(a, b) + 1);
+  for (let i = 0; i < order.length; i++)
+    for (let j = i + 1; j < order.length; j++) {
+      const a = metrics(order[i]!);
+      const b = metrics(order[j]!);
+      const diffs = [
+        ratio(a.count, b.count) > 1.2,
+        Math.hypot(a.mean[0] - b.mean[0], a.mean[1] - b.mean[1], a.mean[2] - b.mean[2]) > 12,
+        ratio(a.variance, b.variance) > 1.5,
+        ratio(a.distinct, b.distinct) > 1.5,
+        Math.abs(a.coverage - b.coverage) > 0.15,
+        ratio(a.components, b.components) > 2,
+      ].filter(Boolean).length;
+      expect(
+        diffs,
+        `${order[i]} vs ${order[j]}: ${JSON.stringify({ a, b })}`,
+      ).toBeGreaterThanOrEqual(2);
     }
 });

@@ -257,45 +257,92 @@ test('8. orientation change keeps the painting', async ({ page }) => {
   for (let ch = 0; ch < 3; ch++) expect(Math.abs(back[ch]! - painted[ch]!)).toBeLessThan(25);
 });
 
-test.describe('storage failure', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.addInitScript(() => {
-      IDBObjectStore.prototype.put = function () {
-        throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
-      };
-      const seen: string[] = [];
-      (window as unknown as { __statuses: string[] }).__statuses = seen;
-      new MutationObserver(() => {
-        const el = document.querySelector('[data-testid="save-status"]');
-        const s = el?.getAttribute('data-status');
-        if (s && seen[seen.length - 1] !== s) seen.push(s);
-      }).observe(document, {
-        subtree: true,
-        childList: true,
-        attributes: true,
-        attributeFilter: ['data-status'],
-      });
+for (const mode of ['sync-throw', 'async-error'] as const) {
+  test.describe(`storage failure (${mode})`, () => {
+    test.beforeEach(async ({ page }) => {
+      await page.addInitScript((m) => {
+        const quota = () => new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+        const realPut = IDBObjectStore.prototype.put;
+        IDBObjectStore.prototype.put = function (this: IDBObjectStore, ...args) {
+          if (m === 'sync-throw') throw quota();
+          // Async: a real request whose transaction aborts; request/transaction report quota.
+          const req = realPut.apply(this, args as Parameters<IDBObjectStore['put']>);
+          const err = quota();
+          const tx = this.transaction;
+          Object.defineProperty(req, 'error', { get: () => err });
+          Object.defineProperty(tx, 'error', { get: () => err });
+          setTimeout(() => {
+            try {
+              tx.abort();
+            } catch {
+              /* already finished */
+            }
+          }, 0);
+          return req;
+        } as IDBObjectStore['put'];
+        // Every mutation record touching save-status, in order (attribute changes and inserts).
+        const log: string[] = [];
+        (window as unknown as { __statusLog: string[] }).__statusLog = log;
+        new MutationObserver((records) => {
+          for (const rec of records) {
+            if (rec.type === 'attributes' && rec.target instanceof Element) {
+              if (rec.target.getAttribute('data-testid') === 'save-status')
+                log.push(`attr:${rec.target.getAttribute('data-status')}`);
+            } else if (rec.type === 'childList') {
+              for (const n of rec.addedNodes) {
+                const el =
+                  n instanceof Element
+                    ? n.matches('[data-testid="save-status"]')
+                      ? n
+                      : n.querySelector('[data-testid="save-status"]')
+                    : null;
+                if (el) log.push(`add:${el.getAttribute('data-status')}`);
+                const host = rec.target instanceof Element ? rec.target : null;
+                if (host?.getAttribute('data-testid') === 'save-status')
+                  log.push(`text:${host.textContent}`);
+              }
+            } else if (rec.type === 'characterData') {
+              const host = rec.target.parentElement;
+              if (host?.getAttribute('data-testid') === 'save-status')
+                log.push(`text:${host.textContent}`);
+            }
+          }
+        }).observe(document, {
+          subtree: true,
+          childList: true,
+          characterData: true,
+          attributes: true,
+          attributeFilter: ['data-status'],
+        });
+      }, mode);
+    });
+
+    test('IndexedDB quota error shows the failure text and never "saved"', async ({ page }) => {
+      await openPage(page, 'animals', 'animals-06');
+      const [r] = await findBlankRects(page, 1, 220, 80);
+      await line(page, r!);
+      const status = page.getByTestId('save-status');
+      await expect(status).toHaveAttribute('data-status', 'failed');
+      await expect(status).toHaveText(ptBR['save.failed']);
+      await expect(
+        page.getByRole('alert').filter({ hasText: ptBR['save.failed.help'] }),
+      ).toBeVisible();
+      await page.getByTestId('done').click();
+      await expect(status).toHaveAttribute('data-status', 'failed');
+      // A second gesture and a retry still fail.
+      await line(page, { ...r!, y: r!.y + 10 });
+      await page.getByRole('button', { name: ptBR['save.retry'] }).click();
+      await expect(status).toHaveAttribute('data-status', 'failed');
+      const log = await page.evaluate(
+        () => (window as unknown as { __statusLog: string[] }).__statusLog,
+      );
+      test.info().annotations.push({ type: 'status-log', description: JSON.stringify(log) });
+      expect(log).toContain('attr:failed');
+      expect(log).toContain('attr:saving');
+      expect(log).not.toContain('attr:saved');
+      expect(log.filter((e) => e === `text:${ptBR['save.saved']}`)).toEqual([]);
+      expect(log).toContain(`text:${ptBR['save.failed']}`);
+      expect(await readArtwork(page, 'animals-06')).toBeNull();
     });
   });
-
-  test('IndexedDB quota error shows the failure text and never "saved"', async ({ page }) => {
-    await openPage(page, 'animals', 'animals-06');
-    const [r] = await findBlankRects(page, 1, 220, 80);
-    await line(page, r!);
-    const status = page.getByTestId('save-status');
-    await expect(status).toHaveAttribute('data-status', 'failed');
-    await expect(status).toHaveText(ptBR['save.failed']);
-    await expect(
-      page.getByRole('alert').filter({ hasText: ptBR['save.failed.help'] }),
-    ).toBeVisible();
-    await page.getByTestId('done').click();
-    await expect(status).toHaveAttribute('data-status', 'failed');
-    const seen = await page.evaluate(
-      () => (window as unknown as { __statuses: string[] }).__statuses,
-    );
-    expect(seen).toContain('failed');
-    expect(seen).not.toContain('saved');
-    await expect(status).not.toHaveText(ptBR['save.saved']);
-    expect(await readArtwork(page, 'animals-06')).toBeNull();
-  });
-});
+}

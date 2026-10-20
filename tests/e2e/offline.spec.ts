@@ -10,6 +10,8 @@ import {
   waitReady,
 } from './helpers';
 
+test.use({ serviceWorkers: 'allow' });
+
 test('10. reopen and paint offline after the app is fully cached', async ({ page, context }) => {
   await page.goto('/');
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));

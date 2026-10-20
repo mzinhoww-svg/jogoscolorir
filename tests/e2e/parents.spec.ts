@@ -1,23 +1,24 @@
 import { expect, test, type Page } from '@playwright/test';
+import type { Dict } from '../../src/i18n/pt-BR';
 import { ptBR } from '../../src/i18n/pt-BR';
 import { en } from '../../src/i18n/en';
 import { es } from '../../src/i18n/es';
 import { PREFS_KEY } from './helpers';
 
-/** Read "Quanto é {a} mais {b}?" (in words) and compute the answer with the num.N table. */
-async function gateAnswer(page: Page): Promise<number> {
+/** Read the gate prompt (numbers in words) and compute the answer with the dictionary's num.N table. */
+async function gateAnswer(page: Page, dict: Dict = ptBR): Promise<number> {
   const text = (await page.locator('.gate-prompt').textContent()) ?? '';
   const words = new Map<string, number>();
-  for (let n = 0; n <= 20; n++) words.set(ptBR[`num.${n}` as keyof typeof ptBR], n);
-  const [pre, post] = ptBR['gate.prompt'].split('{a}') as [string, string];
+  for (let n = 0; n <= 20; n++) words.set(dict[`num.${n}` as keyof Dict], n);
+  const [pre, post] = dict['gate.prompt'].split('{a}') as [string, string];
   const [mid, end] = post.split('{b}') as [string, string];
-  expect(text.startsWith(pre) && text.endsWith(end)).toBe(true);
+  expect(text.startsWith(pre) && text.endsWith(end), `prompt "${text}"`).toBe(true);
   const [wa, wb] = text.slice(pre.length, text.length - end.length).split(mid);
-  const a = words.get(wa ?? '');
-  const b = words.get(wb ?? '');
-  expect(a, `word ${wa}`).toBeDefined();
-  expect(b, `word ${wb}`).toBeDefined();
-  return a! + b!;
+  const x = words.get(wa ?? '');
+  const y = words.get(wb ?? '');
+  expect(x, `word ${wa}`).toBeDefined();
+  expect(y, `word ${wb}`).toBeDefined();
+  return x! + y!;
 }
 
 async function enterGate(page: Page, answer: number): Promise<void> {
@@ -63,13 +64,7 @@ test('11. language and audio preferences behind the parental gate', async ({ pag
   expect(await readPrefs(page)).toMatchObject({ v: 1, lang: 'es', music: false, sfx: false });
   // The gate prompt is now Spanish; answer it with the Spanish number words.
   await page.getByTestId('nav-parents').click();
-  const text = (await page.locator('.gate-prompt').textContent()) ?? '';
-  const words = new Map<string, number>();
-  for (let n = 0; n <= 20; n++) words.set(es[`num.${n}` as keyof typeof es], n);
-  const [pre, post] = es['gate.prompt'].split('{a}') as [string, string];
-  const [mid, end] = post.split('{b}') as [string, string];
-  const [wa, wb] = text.slice(pre.length, text.length - end.length).split(mid);
-  await enterGate(page, words.get(wa!)! + words.get(wb!)!);
+  await enterGate(page, await gateAnswer(page, es));
   await expect(page.getByTestId('toggle-music')).toHaveAttribute('aria-checked', 'false');
   await expect(page.getByTestId('toggle-sfx')).toHaveAttribute('aria-checked', 'false');
   await page.getByTestId('lang-pt-BR').click();
