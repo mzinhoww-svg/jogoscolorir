@@ -174,6 +174,7 @@ export const en: Dict = {
   'update.available': 'A new version of the app is available.',
   'update.apply': 'Update',
   'update.none': 'The app is up to date.',
+  'update.waitSave': 'The update will wait until your drawings are saved.',
   'update.pill': 'New version available',
   'pwa.offlineReady': 'Ready to use offline',
   'credits.title': 'Credits and licenses',

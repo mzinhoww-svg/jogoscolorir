@@ -63,7 +63,11 @@ function Shell() {
   useSaveRetry(prefs.lang, showToast);
   const lang = prefs.lang;
   useEffect(() => {
-    void registerPwa({ setUpdate, onOfflineReady: () => showToast(t(lang, 'pwa.offlineReady')) });
+    void registerPwa({
+      setUpdate,
+      onOfflineReady: () => showToast(t(lang, 'pwa.offlineReady')),
+      onBlocked: () => showToast(t(lang, 'update.waitSave'), 'error'),
+    });
     // register once; later language changes only affect the toast text of this first call
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

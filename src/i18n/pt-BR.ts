@@ -172,6 +172,7 @@ export const ptBR = {
   'update.available': 'Há uma versão nova do app.',
   'update.apply': 'Atualizar',
   'update.none': 'O app está atualizado.',
+  'update.waitSave': 'A atualização espera até os desenhos serem salvos.',
   'update.pill': 'Nova versão disponível',
   'pwa.offlineReady': 'Pronto para usar sem internet',
   'credits.title': 'Créditos e licenças',

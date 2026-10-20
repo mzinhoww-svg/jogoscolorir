@@ -173,6 +173,7 @@ export const es: Dict = {
   'update.available': 'Hay una versión nueva de la app.',
   'update.apply': 'Actualizar',
   'update.none': 'La app está actualizada.',
+  'update.waitSave': 'La actualización espera a que se guarden los dibujos.',
   'update.pill': 'Nueva versión disponible',
   'pwa.offlineReady': 'Listo para usar sin internet',
   'credits.title': 'Créditos y licencias',

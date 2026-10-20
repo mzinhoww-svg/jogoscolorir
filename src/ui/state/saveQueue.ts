@@ -75,6 +75,7 @@ export function createSaveQueue(persist: Persist) {
     },
     flush,
     async flushAll(): Promise<boolean> {
+      while (encoding.size) await Promise.all([...encoding.values()]);
       const ids = [...new Set([...pending.keys(), ...inflight.keys()])];
       const rs = await Promise.all(ids.map(flush));
       return rs.every(Boolean);
@@ -83,6 +84,9 @@ export function createSaveQueue(persist: Persist) {
     get: (pageId: string): Snapshot | undefined => pending.get(pageId),
     hasPending: (): boolean => pending.size > 0,
     hasFailed: (): boolean => failed.size > 0,
+    /** True when nothing is unsaved, failed, in flight or still being encoded. */
+    isClean: (): boolean =>
+      pending.size === 0 && failed.size === 0 && inflight.size === 0 && encoding.size === 0,
   };
 }
 
