@@ -41,3 +41,33 @@ export async function applyUpdate({
   await updateSW(true);
   return true;
 }
+
+/** Decision: an update that was blocked by unsaved work may be retried once we are off the paint screen and everything is saved. */
+export function shouldRetryBlocked(blocked: boolean, hash: string, clean: boolean): boolean {
+  return blocked && clean && shouldApplyNow(hash);
+}
+
+export interface BlockedRetryDeps {
+  getHash: () => string;
+  isClean: () => boolean;
+  /** Re-run the apply (which flushes again and may block again). */
+  apply: () => void;
+}
+
+/** Remembers a blocked update and retries it automatically when it becomes safe. */
+export function createBlockedRetry({ getHash, isClean, apply }: BlockedRetryDeps) {
+  let blocked = false;
+  return {
+    markBlocked(): void {
+      blocked = true;
+    },
+    isBlocked: (): boolean => blocked,
+    /** Call on route changes, visibility changes and periodically while blocked. Returns whether a retry started. */
+    check(): boolean {
+      if (!shouldRetryBlocked(blocked, getHash(), isClean())) return false;
+      blocked = false; // a failed attempt calls markBlocked() again via onBlocked
+      apply();
+      return true;
+    },
+  };
+}

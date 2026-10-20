@@ -1,5 +1,5 @@
 import { saveQueue } from '@/ui/state/saveQueue';
-import { applyUpdate } from './applyUpdate';
+import { applyUpdate, createBlockedRetry } from './applyUpdate';
 import type { PwaUpdate } from '@/ui/state/AppState';
 
 interface Hooks {
@@ -15,20 +15,33 @@ export async function registerPwa({ setUpdate, onOfflineReady, onBlocked }: Hook
   if (started || !import.meta.env.PROD) return;
   started = true;
   const { registerSW } = await import('virtual:pwa-register');
+  const apply = () => {
+    void applyUpdate({
+      hash: window.location.hash,
+      flush: () => saveQueue.flushAll(),
+      updateSW,
+      isClean: () => saveQueue.isClean(),
+      onBlocked: () => {
+        retry.markBlocked();
+        onBlocked();
+      },
+      currentHash: () => window.location.hash,
+    });
+  };
+  const retry = createBlockedRetry({
+    getHash: () => window.location.hash,
+    isClean: () => saveQueue.isClean(),
+    apply,
+  });
+  // A blocked update is retried when the child leaves the canvas or the saves catch up.
+  window.addEventListener('hashchange', () => retry.check());
+  document.addEventListener('visibilitychange', () => retry.check());
+  window.setInterval(() => {
+    if (retry.isBlocked()) retry.check();
+  }, 2000);
   const updateSW = registerSW({
     onNeedRefresh() {
-      setUpdate({
-        apply: () => {
-          void applyUpdate({
-            hash: window.location.hash,
-            flush: () => saveQueue.flushAll(),
-            updateSW,
-            isClean: () => saveQueue.isClean(),
-            onBlocked,
-            currentHash: () => window.location.hash,
-          });
-        },
-      });
+      setUpdate({ apply });
     },
     onOfflineReady,
   });

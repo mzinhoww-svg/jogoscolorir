@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { applyUpdate, shouldApplyNow } from '@/pwa/applyUpdate';
+import {
+  applyUpdate,
+  createBlockedRetry,
+  shouldApplyNow,
+  shouldRetryBlocked,
+} from '@/pwa/applyUpdate';
 
 describe('shouldApplyNow', () => {
   it('refuses on paint routes only', () => {
@@ -90,5 +95,32 @@ describe('applyUpdate re-check', () => {
     });
     expect(ok).toBe(false);
     expect(updateSW).not.toHaveBeenCalled();
+  });
+});
+
+describe('blocked update retry', () => {
+  it('shouldRetryBlocked needs blocked, clean and not on the paint screen', () => {
+    expect(shouldRetryBlocked(true, '#/', true)).toBe(true);
+    expect(shouldRetryBlocked(true, '#/pintar/x-01', true)).toBe(false);
+    expect(shouldRetryBlocked(true, '#/', false)).toBe(false);
+    expect(shouldRetryBlocked(false, '#/', true)).toBe(false);
+  });
+  it('retries once when the queue becomes clean off the paint screen', () => {
+    let hash = '#/pintar/x-01';
+    let clean = false;
+    const apply = vi.fn();
+    const r = createBlockedRetry({ getHash: () => hash, isClean: () => clean, apply });
+    expect(r.check()).toBe(false); // nothing blocked yet
+    r.markBlocked();
+    expect(r.check()).toBe(false); // still painting and dirty
+    hash = '#/';
+    expect(r.check()).toBe(false); // left the canvas but not saved yet
+    clean = true;
+    expect(r.check()).toBe(true);
+    expect(apply).toHaveBeenCalledTimes(1);
+    expect(r.check()).toBe(false); // not retried again unless blocked again
+    r.markBlocked();
+    expect(r.check()).toBe(true);
+    expect(apply).toHaveBeenCalledTimes(2);
   });
 });
