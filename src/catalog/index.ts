@@ -13,7 +13,7 @@ export type { PageDef, Pen, ThemeDef, ThemeId } from './types';
 export { renderOutline, rasterizeOutline } from './render';
 
 /** Task 7 flips this to true once all 135 pages exist. */
-export const CATALOG_COMPLETE = false;
+export const CATALOG_COMPLETE = true;
 
 const def = (id: ThemeId, color: string, pages: PageDef[]): ThemeDef => ({
   id,
