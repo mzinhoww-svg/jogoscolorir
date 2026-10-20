@@ -177,7 +177,7 @@ export const ptBR = {
   'pwa.offlineReady': 'Pronto para usar sem internet',
   'credits.title': 'Créditos e licenças',
   'credits.body':
-    'Pinta Mundo é um jogo de colorir original. Todos os desenhos, sons e textos foram criados para este app. A fonte Baloo 2 é usada sob a licença SIL Open Font License 1.1. O app usa as bibliotecas de código aberto React e idb, sob a licença MIT.',
+    'Pinta Mundo é um jogo de colorir original. Todos os desenhos, sons e textos foram criados para este app. A fonte Baloo 2 é usada sob a licença SIL Open Font License 1.1. O app usa as bibliotecas de código aberto React (licença MIT), idb (licença ISC) e Workbox (licença MIT).',
   'offline.note': 'Sem internet? Tudo bem, o jogo continua funcionando.',
   'offline.ready': 'Pronto para jogar sem internet.',
   'error.generic': 'Algo deu errado. Tente de novo.',

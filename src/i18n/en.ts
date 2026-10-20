@@ -179,7 +179,7 @@ export const en: Dict = {
   'pwa.offlineReady': 'Ready to use offline',
   'credits.title': 'Credits and licenses',
   'credits.body':
-    'Pinta Mundo is an original coloring game. All drawings, sounds and texts were created for this app. The Baloo 2 font is used under the SIL Open Font License 1.1. The app uses the open source libraries React and idb, under the MIT license.',
+    'Pinta Mundo is an original coloring game. All drawings, sounds and texts were created for this app. The Baloo 2 font is used under the SIL Open Font License 1.1. The app uses the open source libraries React (MIT license), idb (ISC license) and Workbox (MIT license).',
   'offline.note': 'No internet? That is fine, the game keeps working.',
   'offline.ready': 'Ready to play offline.',
   'error.generic': 'Something went wrong. Please try again.',

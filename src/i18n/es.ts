@@ -178,7 +178,7 @@ export const es: Dict = {
   'pwa.offlineReady': 'Listo para usar sin internet',
   'credits.title': 'Créditos y licencias',
   'credits.body':
-    'Pinta Mundo es un juego de colorear original. Todos los dibujos, sonidos y textos se crearon para esta app. La fuente Baloo 2 se usa bajo la licencia SIL Open Font License 1.1. La app usa las bibliotecas de código abierto React e idb, bajo la licencia MIT.',
+    'Pinta Mundo es un juego de colorear original. Todos los dibujos, sonidos y textos se crearon para esta app. La fuente Baloo 2 se usa bajo la licencia SIL Open Font License 1.1. La app usa las bibliotecas de código abierto React (licencia MIT), idb (licencia ISC) y Workbox (licencia MIT).',
   'offline.note': '¿Sin internet? No pasa nada, el juego sigue funcionando.',
   'offline.ready': 'Listo para jugar sin internet.',
   'error.generic': 'Algo salió mal. Inténtalo de nuevo.',
