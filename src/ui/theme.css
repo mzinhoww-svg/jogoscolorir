@@ -1006,3 +1006,7 @@ p {
     grid-template-rows: var(--tap);
   }
 }
+.paint-canvas:not([data-ready]) {
+  opacity: 0.55;
+  cursor: progress;
+}

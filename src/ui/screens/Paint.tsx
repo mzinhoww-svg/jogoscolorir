@@ -78,6 +78,8 @@ export function Paint(props: { pageId: string }) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const needsSaveRef = useRef(false);
   const mountedRef = useRef(false);
+  /** False until the outline and any saved/queued paint are loaded: input is ignored. */
+  const readyRef = useRef(false);
   const createdAtRef = useRef<number | null>(null);
   const strokesRef = useRef(0);
   const downRef = useRef<{ x: number; y: number } | null>(null);
@@ -131,6 +133,7 @@ export function Paint(props: { pageId: string }) {
   }, [pageId, snapshot]);
 
   const scheduleSave = useCallback(() => {
+    if (!readyRef.current) return;
     needsSaveRef.current = true;
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => void saveNow(), AUTOSAVE_MS);
@@ -164,6 +167,7 @@ export function Paint(props: { pageId: string }) {
     });
     sessionRef.current = session;
     let alive = true;
+    readyRef.current = false;
 
     const fit = () => {
       const r = stage.getBoundingClientRect();
@@ -183,6 +187,10 @@ export function Paint(props: { pageId: string }) {
 
     // Pointer wiring: native events straight to the session, no React state per move.
     const down = (e: PointerEvent) => {
+      if (!readyRef.current) {
+        e.preventDefault();
+        return;
+      }
       const r = canvas.getBoundingClientRect();
       downRef.current = { x: e.clientX - r.left, y: e.clientY - r.top };
       session.pointerDown(e);
@@ -232,6 +240,7 @@ export function Paint(props: { pageId: string }) {
       }
       if (!alive) return;
       session.renderNow();
+      readyRef.current = true;
       canvas.setAttribute('data-ready', 'true');
     })();
 
@@ -296,17 +305,20 @@ export function Paint(props: { pageId: string }) {
     audio.play('shine');
   };
   const undo = () => {
+    if (!readyRef.current) return;
     sessionRef.current?.undo();
     audio.play('click');
     scheduleSave();
   };
   const redo = () => {
+    if (!readyRef.current) return;
     sessionRef.current?.redo();
     audio.play('click');
     scheduleSave();
   };
   const doClear = () => {
     setConfirmClear(false);
+    if (!readyRef.current) return;
     sessionRef.current?.clear();
     scheduleSave();
   };
