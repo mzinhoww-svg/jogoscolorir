@@ -1,0 +1,40 @@
+// Renders the app icons from an original SVG. Usage: npx tsx scripts/icons.ts
+import { createCanvas, loadImage } from '@napi-rs/canvas';
+import { mkdirSync, writeFileSync } from 'node:fs';
+
+const blobs = `
+  <circle cx="190" cy="200" r="95" fill="#FFD43B"/>
+  <circle cx="330" cy="170" r="80" fill="#4DABF7"/>
+  <circle cx="400" cy="300" r="85" fill="#38D9A9"/>
+  <circle cx="130" cy="330" r="70" fill="#9775FA"/>`;
+const palette = `
+  <path d="M256 120c-84 0-150 56-150 130 0 62 52 106 112 106 26 0 34-14 26-30-8-16 0-34 22-34h40c40 0 66-24 66-58 0-62-50-114-116-114z" fill="#FFFFFF" stroke="#2B2340" stroke-width="14" stroke-linejoin="round"/>
+  <circle cx="190" cy="218" r="26" fill="#FF6B5A"/>
+  <circle cx="262" cy="190" r="26" fill="#FFD43B"/>
+  <circle cx="332" cy="226" r="26" fill="#4DABF7"/>
+  <circle cx="176" cy="296" r="26" fill="#38D9A9"/>`;
+const brush = `
+  <g transform="rotate(35 380 380)">
+    <rect x="368" y="270" width="26" height="150" rx="13" fill="#9775FA" stroke="#2B2340" stroke-width="10"/>
+    <path d="M360 270h42v-30c0-22-42-22-42 0z" fill="#FF6B5A" stroke="#2B2340" stroke-width="10" stroke-linejoin="round"/>
+  </g>`;
+const art = (bg: string) =>
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">${bg}${blobs}${palette}${brush}</svg>`;
+const rounded = '<rect width="512" height="512" rx="112" fill="#FFF7EC"/>';
+const full = '<rect width="512" height="512" fill="#FFF7EC"/>';
+// Maskable: artwork scaled into the central safe zone (~70%).
+const maskable = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">${full}<g transform="translate(76.8 76.8) scale(0.7)">${blobs}${palette}${brush}</g></svg>`;
+
+mkdirSync('public/icons', { recursive: true });
+writeFileSync('public/icons/favicon.svg', art(rounded));
+
+async function png(svg: string, size: number, file: string) {
+  const img = await loadImage(Buffer.from(svg));
+  const c = createCanvas(size, size);
+  c.getContext('2d').drawImage(img, 0, 0, size, size);
+  writeFileSync(`public/icons/${file}`, c.toBuffer('image/png'));
+}
+await png(art(rounded), 192, 'icon-192.png');
+await png(art(rounded), 512, 'icon-512.png');
+await png(maskable, 512, 'icon-maskable-512.png');
+await png(art(full), 180, 'apple-touch-icon.png');
