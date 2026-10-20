@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { createCanvas } from '@napi-rs/canvas';
 import { THEMES, CATALOG_COMPLETE, getPage } from '@/catalog';
 import { rasterizeOutline } from '@/catalog/render';
+import { hasKey } from '@/i18n';
 import { buildRegionMap, type RegionMap } from '@/engine/regions';
 
 const all = THEMES.flatMap((t) => t.pages);
@@ -44,8 +45,10 @@ describe('catalog structure', () => {
     for (const t of THEMES) expect(t.pages.length).toBe(15);
   });
 
-  // TODO(Task 5): enable once i18n exists, checking nameKey in pt-BR, en and es.
-  it.skip('every nameKey exists in all 3 languages', () => {});
+  it.skipIf(!CATALOG_COMPLETE)('every nameKey exists in all 3 languages', () => {
+    for (const lang of ['pt-BR', 'en', 'es'] as const)
+      for (const p of all) expect(hasKey(lang, p.nameKey), `${lang} ${p.nameKey}`).toBe(true);
+  });
 });
 
 describe.each(all.map((p) => [p.id, p] as const))('page %s', (_id, pg) => {
