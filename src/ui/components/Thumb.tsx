@@ -3,12 +3,18 @@ import type { PageDef } from '@/catalog';
 import { renderOutline } from '@/catalog';
 
 const THUMB_PX = 256;
-/** Outline thumbnails, rendered once per page and kept for the app's lifetime. */
+/** Outline thumbnails, rendered once per page; LRU-capped so memory stays bounded. */
+export const OUTLINE_CACHE_MAX = 40;
 const outlineCache = new Map<string, HTMLCanvasElement>();
 
-function outlineThumb(page: PageDef): HTMLCanvasElement | null {
+/** @internal exported for tests */
+export function outlineThumb(page: PageDef): HTMLCanvasElement | null {
   const hit = outlineCache.get(page.id);
-  if (hit) return hit;
+  if (hit) {
+    outlineCache.delete(page.id); // refresh recency
+    outlineCache.set(page.id, hit);
+    return hit;
+  }
   const c = document.createElement('canvas');
   c.width = THUMB_PX;
   c.height = THUMB_PX;
@@ -18,6 +24,11 @@ function outlineThumb(page: PageDef): HTMLCanvasElement | null {
   ctx.fillRect(0, 0, THUMB_PX, THUMB_PX);
   renderOutline(ctx, page, THUMB_PX);
   outlineCache.set(page.id, c);
+  while (outlineCache.size > OUTLINE_CACHE_MAX) {
+    const oldest = outlineCache.keys().next().value;
+    if (oldest === undefined) break;
+    outlineCache.delete(oldest);
+  }
   return c;
 }
 
@@ -54,3 +65,6 @@ export function Thumb(props: { page: PageDef; blob?: Blob | null; label: string 
     />
   );
 }
+
+/** @internal test hook */
+export const __outlineCacheKeys = (): string[] => [...outlineCache.keys()];
