@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
+import { useDialogFocus } from './useDialogFocus';
 
 export function ConfirmDialog(props: {
   title: string;
@@ -10,18 +11,12 @@ export function ConfirmDialog(props: {
   onNo: () => void;
 }) {
   const noRef = useRef<HTMLButtonElement>(null);
-  const { onNo } = props;
-  useEffect(() => {
-    noRef.current?.focus();
-    const key = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onNo();
-    };
-    window.addEventListener('keydown', key);
-    return () => window.removeEventListener('keydown', key);
-  }, [onNo]);
+  const dlgRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(dlgRef, { onEscape: props.onNo, trap: true, initial: noRef });
   return (
     <div className="overlay" role="presentation">
       <div
+        ref={dlgRef}
         className="dialog"
         role="alertdialog"
         aria-modal="true"

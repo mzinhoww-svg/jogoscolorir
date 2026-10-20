@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useDialogFocus } from './useDialogFocus';
 import { useT } from '@/i18n';
 import { createGate } from '@/ui/parentalGate';
 import { Icon } from './Icon';
@@ -9,6 +10,10 @@ const KEYS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
 export function ParentalGate(props: { onPass: () => void; onCancel: () => void }) {
   const { t } = useT();
   const [gate] = useState(createGate);
+  const sectionRef = useRef<HTMLElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  // In-page gate (not modal): focus the answer field, Escape cancels, focus returns on close.
+  useDialogFocus(sectionRef, { onEscape: props.onCancel, trap: false, initial: inputRef });
   const [challenge, setChallenge] = useState(gate.challenge);
   const [input, setInput] = useState('');
   const [error, setError] = useState<'wrong' | 'locked' | null>(null);
@@ -48,7 +53,7 @@ export function ParentalGate(props: { onPass: () => void; onCancel: () => void }
   };
 
   return (
-    <section className="gate card" aria-labelledby="gate-title">
+    <section ref={sectionRef} className="gate card" aria-labelledby="gate-title">
       <div className="gate-head">
         <Icon name="lock" size={34} />
         <h1 id="gate-title">{t('gate.title')}</h1>
@@ -62,6 +67,7 @@ export function ParentalGate(props: { onPass: () => void; onCancel: () => void }
         }}
       >
         <input
+          ref={inputRef}
           data-testid="gate-input"
           className="gate-input"
           inputMode="numeric"
