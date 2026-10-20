@@ -19,12 +19,15 @@ export function getDb(): Promise<PintaDb> {
     try {
       return (await openDB(DB_NAME, DB_VERSION, {
         upgrade(db) {
-          if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE, { keyPath: 'pageId' });
+          if (!db.objectStoreNames.contains(STORE))
+            db.createObjectStore(STORE, { keyPath: 'pageId' });
         },
       })) as PintaDb;
     } catch (e) {
       // Any failure to open means storage is not usable (private mode, blocked, denied).
-      throw Object.assign(new Error(e instanceof Error ? e.message : 'open failed'), { name: 'SecurityError' });
+      throw Object.assign(new Error(e instanceof Error ? e.message : 'open failed'), {
+        name: 'SecurityError',
+      });
     }
   })();
   dbPromise = p;

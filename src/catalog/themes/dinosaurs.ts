@@ -10,16 +10,36 @@ const rad = (d: number) => (d * Math.PI) / 180;
 const f = (n: number) => Math.round(n * 10) / 10;
 
 /** Closed bump (tail, leg, horn, plate...) attached to a circle between angles a1<a2 (degrees, y down). */
-function lobe(p: Pen, cx: number, cy: number, R: number, a1: number, a2: number, out: number, w = 0): void {
-  const P = (a: number, r: number) => `${f(cx + r * Math.cos(rad(a)))} ${f(cy + r * Math.sin(rad(a)))}`;
+function lobe(
+  p: Pen,
+  cx: number,
+  cy: number,
+  R: number,
+  a1: number,
+  a2: number,
+  out: number,
+  w = 0,
+): void {
+  const P = (a: number, r: number) =>
+    `${f(cx + r * Math.cos(rad(a)))} ${f(cy + r * Math.sin(rad(a)))}`;
   const large = Math.abs(a2 - a1) > 180 ? 1 : 0;
   const h = rad((a2 - a1 + 2 * w) / 2);
   const rc = (R + out - 0.25 * R * Math.cos(rad((a2 - a1) / 2))) / (0.75 * Math.cos(h));
-  p.path(`M${P(a1, R)} C${P(a1 - w, rc)} ${P(a2 + w, rc)} ${P(a2, R)} A${R} ${R} 0 ${large} 0 ${P(a1, R)} Z`);
+  p.path(
+    `M${P(a1, R)} C${P(a1 - w, rc)} ${P(a2 + w, rc)} ${P(a2, R)} A${R} ${R} 0 ${large} 0 ${P(a1, R)} Z`,
+  );
 }
 
 /** Outline of the union of two overlapping circles. */
-function union(p: Pen, x1: number, y1: number, r1: number, x2: number, y2: number, r2: number): void {
+function union(
+  p: Pen,
+  x1: number,
+  y1: number,
+  r1: number,
+  x2: number,
+  y2: number,
+  r2: number,
+): void {
   const dx = x2 - x1;
   const dy = y2 - y1;
   const d = Math.hypot(dx, dy);
@@ -42,10 +62,22 @@ function union(p: Pen, x1: number, y1: number, r1: number, x2: number, y2: numbe
   );
 }
 
-type Seg = ['L', number, number] | ['Q', number, number, number, number] | ['C', number, number, number, number, number, number];
+type Seg =
+  | ['L', number, number]
+  | ['Q', number, number, number, number]
+  | ['C', number, number, number, number, number, number];
 
 /** Part glued to an ellipse between params t1<t2 (degrees); segs use absolute coordinates. */
-function part(p: Pen, cx: number, cy: number, rx: number, ry: number, t1: number, t2: number, segs: Seg[]): void {
+function part(
+  p: Pen,
+  cx: number,
+  cy: number,
+  rx: number,
+  ry: number,
+  t1: number,
+  t2: number,
+  segs: Seg[],
+): void {
   const e = (t: number) => [cx + rx * Math.cos(rad(t)), cy + ry * Math.sin(rad(t))];
   const a = e(t1);
   const b = e(t2);
@@ -75,7 +107,12 @@ function sun(p: Pen, x: number, y: number, r: number): void {
   p.circle(x, y, r);
   for (let i = 0; i < 8; i++) {
     const a = rad(i * 45);
-    p.line(x + (r + 22) * Math.cos(a), y + (r + 22) * Math.sin(a), x + (r + 60) * Math.cos(a), y + (r + 60) * Math.sin(a));
+    p.line(
+      x + (r + 22) * Math.cos(a),
+      y + (r + 22) * Math.sin(a),
+      x + (r + 60) * Math.cos(a),
+      y + (r + 60) * Math.sin(a),
+    );
   }
 }
 
@@ -91,8 +128,16 @@ export const pages: PageDef[] = [
     eyes(p, 650, 310, 32);
     p.circle(890, 355, 13); // nostril
     p.path('M690 440 Q800 500 905 420'); // smile
-    p.poly([[735, 470], [775, 480], [752, 512]]); // teeth
-    p.poly([[810, 478], [848, 470], [832, 505]]);
+    p.poly([
+      [735, 470],
+      [775, 480],
+      [752, 512],
+    ]); // teeth
+    p.poly([
+      [810, 478],
+      [848, 470],
+      [832, 505],
+    ]);
     p.ellipse(400, 690, 110, 65); // belly patch
     p.circle(340, 540, 38);
     p.circle(460, 500, 32);
@@ -170,7 +215,9 @@ export const pages: PageDef[] = [
 
   // 5 baby hatching
   page('dinosaurs', 5, (p) => {
-    p.path('M160 540 L160 580 L240 500 L320 580 L400 500 L480 580 L560 500 L640 580 L720 500 L800 580 L840 540 A340 360 0 0 1 160 540 Z'); // egg half
+    p.path(
+      'M160 540 L160 580 L240 500 L320 580 L400 500 L480 580 L560 500 L640 580 L720 500 L800 580 L840 540 A340 360 0 0 1 160 540 Z',
+    ); // egg half
     p.path('M320 580 A160 200 0 0 1 640 580 L560 500 L480 580 L400 500 Z'); // baby head
     eyes(p, 420, 440, 36);
     eyes(p, 540, 440, 36);
@@ -181,8 +228,16 @@ export const pages: PageDef[] = [
     p.circle(370, 790, 42); // shell spots
     p.circle(590, 740, 50);
     p.circle(480, 870, 28);
-    p.poly([[70, 880], [140, 820], [170, 900]]); // shell bits
-    p.poly([[860, 840], [930, 800], [920, 900]]);
+    p.poly([
+      [70, 880],
+      [140, 820],
+      [170, 900],
+    ]); // shell bits
+    p.poly([
+      [860, 840],
+      [930, 800],
+      [920, 900],
+    ]);
     p.path('M60 950 Q200 920 340 950 T620 950 T940 950');
   }),
 
@@ -258,7 +313,13 @@ export const pages: PageDef[] = [
     lobe(p, 430, 620, 200, 52, 78, 130, 0); // legs
     lobe(p, 430, 620, 200, 102, 128, 130, 0);
     lobe(p, 430, 620, 200, 12, 32, 75, 0); // arm
-    for (const a of [-125, -100, -75]) p.line(430 + 210 * Math.cos(rad(a)), 620 + 210 * Math.sin(rad(a)), 430 + 310 * Math.cos(rad(a)), 620 + 310 * Math.sin(rad(a)));
+    for (const a of [-125, -100, -75])
+      p.line(
+        430 + 210 * Math.cos(rad(a)),
+        620 + 210 * Math.sin(rad(a)),
+        430 + 310 * Math.cos(rad(a)),
+        620 + 310 * Math.sin(rad(a)),
+      );
     eyes(p, 700, 450, 26);
     p.circle(820, 470, 10);
     p.path('M720 530 Q800 570 870 520');
@@ -270,12 +331,18 @@ export const pages: PageDef[] = [
   page('dinosaurs', 10, (p) => {
     p.path('M150 800 L400 320 A100 30 0 0 0 600 320 L850 800 Z'); // mountain
     p.ellipse(500, 320, 100, 30); // crater
-    p.path('M440 344 Q420 450 470 500 Q430 580 470 690 Q500 750 530 690 Q570 580 530 500 Q580 450 560 344 A100 30 0 0 1 440 344 Z'); // lava
+    p.path(
+      'M440 344 Q420 450 470 500 Q430 580 470 690 Q500 750 530 690 Q570 580 530 500 Q580 450 560 344 A100 30 0 0 1 440 344 Z',
+    ); // lava
     cloud(p, 250, 230, 280);
     cloud(p, 520, 140, 230);
     sun(p, 850, 160, 55);
     p.rect(60, 800, 880, 150); // ground
-    for (const [x, y] of [[260, 880], [500, 890], [740, 880]] as [number, number][]) {
+    for (const [x, y] of [
+      [260, 880],
+      [500, 890],
+      [740, 880],
+    ] as [number, number][]) {
       p.ellipse(x, y + 20, 38, 30);
       p.circle(x - 42, y - 24, 16);
       p.circle(x, y - 40, 16);
@@ -352,7 +419,8 @@ export const pages: PageDef[] = [
     lobe(p, 450, 620, 210, 52, 78, 140, 0); // legs
     lobe(p, 450, 620, 210, 102, 128, 140, 0);
     lobe(p, 450, 620, 210, 5, 28, 80, 0); // arm
-    for (const a of [-140, -90, -40]) p.circle(660 + 150 * Math.cos(rad(a)), 380 + 150 * Math.sin(rad(a)), 22);
+    for (const a of [-140, -90, -40])
+      p.circle(660 + 150 * Math.cos(rad(a)), 380 + 150 * Math.sin(rad(a)), 22);
     eyes(p, 700, 390, 30);
     p.circle(770, 420, 11);
     p.path('M670 450 Q730 490 800 440');

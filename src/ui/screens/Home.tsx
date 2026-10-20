@@ -1,4 +1,5 @@
 import { useT } from '@/i18n';
+import { useApp } from '@/ui/state/AppState';
 import { navigate } from '@/ui/router';
 import { BigButton } from '@/ui/components/BigButton';
 import { Icon } from '@/ui/components/Icon';
@@ -25,6 +26,7 @@ function Logo() {
 
 export function Home() {
   const { t } = useT();
+  const { update } = useApp();
   return (
     <div className="screen home">
       <TopBar />
@@ -41,6 +43,16 @@ export function Home() {
         >
           {t('home.play')}
         </BigButton>
+        {update && (
+          <button
+            type="button"
+            data-testid="update-pill"
+            className="update-pill"
+            onClick={update.apply}
+          >
+            {t('update.pill')}
+          </button>
+        )}
         <BigButton testId="nav-gallery" icon="gallery" onClick={() => navigate('#/galeria')}>
           {t('home.gallery')}
         </BigButton>

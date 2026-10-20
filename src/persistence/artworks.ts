@@ -38,7 +38,9 @@ export function migrateRecord(raw: unknown): ArtworkRecord | null {
   return null;
 }
 
-async function run<T>(fn: (db: Awaited<ReturnType<typeof getDb>>) => Promise<T>): Promise<Result<T>> {
+async function run<T>(
+  fn: (db: Awaited<ReturnType<typeof getDb>>) => Promise<T>,
+): Promise<Result<T>> {
   try {
     return ok(await fn(await getDb()));
   } catch (e) {

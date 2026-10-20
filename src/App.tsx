@@ -12,6 +12,7 @@ import { ThemePages } from '@/ui/screens/ThemePages';
 import { Paint } from '@/ui/screens/Paint';
 import { Gallery } from '@/ui/screens/Gallery';
 import { Parents } from '@/ui/screens/Parents';
+import { registerPwa } from '@/pwa/register';
 
 function Screens() {
   const route = useRoute();
@@ -58,8 +59,14 @@ function useSaveRetry(lang: Lang, showToast: (m: string, k?: 'info' | 'error') =
 }
 
 function Shell() {
-  const { prefs, updatePrefs, showToast } = useApp();
+  const { prefs, updatePrefs, showToast, setUpdate } = useApp();
   useSaveRetry(prefs.lang, showToast);
+  const lang = prefs.lang;
+  useEffect(() => {
+    void registerPwa({ setUpdate, onOfflineReady: () => showToast(t(lang, 'pwa.offlineReady')) });
+    // register once; later language changes only affect the toast text of this first call
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const setLang = useCallback((l: Lang) => updatePrefs({ lang: l }), [updatePrefs]);
   useEffect(() => {
     document.documentElement.lang = prefs.lang;

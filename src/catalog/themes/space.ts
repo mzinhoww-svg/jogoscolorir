@@ -234,9 +234,7 @@ export const pages: PageDef[] = [
     const a = pt(-85);
     const b = pt(5);
     p.circle(cx, cy, r); // head
-    p.path(
-      `M${a[0]} ${a[1]} C560 440 760 300 900 110 C860 330 700 560 ${b[0] + 5} ${b[1] + 25}`,
-    ); // tail
+    p.path(`M${a[0]} ${a[1]} C560 440 760 300 900 110 C860 330 700 560 ${b[0] + 5} ${b[1] + 25}`); // tail
     p.path('M450 600 Q640 450 800 260'); // tail streaks
     p.path('M490 665 Q660 560 835 400');
     eyes(p, cx, 650, 62, 26);

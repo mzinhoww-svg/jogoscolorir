@@ -172,6 +172,8 @@ export const ptBR = {
   'update.available': 'Há uma versão nova do app.',
   'update.apply': 'Atualizar',
   'update.none': 'O app está atualizado.',
+  'update.pill': 'Nova versão disponível',
+  'pwa.offlineReady': 'Pronto para usar sem internet',
   'credits.title': 'Créditos e licenças',
   'credits.body':
     'Pinta Mundo é um jogo de colorir original. Todos os desenhos, sons e textos foram criados para este app. A fonte Baloo 2 é usada sob a licença SIL Open Font License 1.1. O app usa as bibliotecas de código aberto React e idb, sob a licença MIT.',

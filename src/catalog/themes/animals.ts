@@ -9,16 +9,36 @@ const rad = (d: number) => (d * Math.PI) / 180;
 const f = (n: number) => Math.round(n * 10) / 10;
 
 /** Closed bump (ear, leg, horn...) attached to a circle between angles a1<a2 (degrees, y down). */
-function lobe(p: Pen, cx: number, cy: number, R: number, a1: number, a2: number, out: number, w = 0): void {
-  const P = (a: number, r: number) => `${f(cx + r * Math.cos(rad(a)))} ${f(cy + r * Math.sin(rad(a)))}`;
+function lobe(
+  p: Pen,
+  cx: number,
+  cy: number,
+  R: number,
+  a1: number,
+  a2: number,
+  out: number,
+  w = 0,
+): void {
+  const P = (a: number, r: number) =>
+    `${f(cx + r * Math.cos(rad(a)))} ${f(cy + r * Math.sin(rad(a)))}`;
   const large = Math.abs(a2 - a1) > 180 ? 1 : 0;
   const h = rad((a2 - a1 + 2 * w) / 2);
   const rc = (R + out - 0.25 * R * Math.cos(rad((a2 - a1) / 2))) / (0.75 * Math.cos(h));
-  p.path(`M${P(a1, R)} C${P(a1 - w, rc)} ${P(a2 + w, rc)} ${P(a2, R)} A${R} ${R} 0 ${large} 0 ${P(a1, R)} Z`);
+  p.path(
+    `M${P(a1, R)} C${P(a1 - w, rc)} ${P(a2 + w, rc)} ${P(a2, R)} A${R} ${R} 0 ${large} 0 ${P(a1, R)} Z`,
+  );
 }
 
 /** Outline of the union of two overlapping circles. */
-function union(p: Pen, x1: number, y1: number, r1: number, x2: number, y2: number, r2: number): void {
+function union(
+  p: Pen,
+  x1: number,
+  y1: number,
+  r1: number,
+  x2: number,
+  y2: number,
+  r2: number,
+): void {
   const dx = x2 - x1;
   const dy = y2 - y1;
   const d = Math.hypot(dx, dy);
@@ -57,7 +77,12 @@ function sun(p: Pen, x: number, y: number, r: number): void {
   p.circle(x, y, r);
   for (let i = 0; i < 8; i++) {
     const a = rad(i * 45);
-    p.line(x + (r + 22) * Math.cos(a), y + (r + 22) * Math.sin(a), x + (r + 60) * Math.cos(a), y + (r + 60) * Math.sin(a));
+    p.line(
+      x + (r + 22) * Math.cos(a),
+      y + (r + 22) * Math.sin(a),
+      x + (r + 60) * Math.cos(a),
+      y + (r + 60) * Math.sin(a),
+    );
   }
 }
 
@@ -126,7 +151,9 @@ export const pages: PageDef[] = [
     lobe(p, 500, 470, 230, -42, 42, 170, 10); // right ear
     p.circle(165, 470, 48);
     p.circle(835, 470, 48);
-    p.path('M425 540 C425 700 420 800 480 880 C520 935 625 925 640 860 C650 815 605 800 590 830 C578 852 548 850 543 820 C535 760 575 700 575 540 Z'); // trunk
+    p.path(
+      'M425 540 C425 700 420 800 480 880 C520 935 625 925 640 860 C650 815 605 800 590 830 C578 852 548 850 543 820 C535 760 575 700 575 540 Z',
+    ); // trunk
     p.path('M450 640 L550 640 M455 710 L548 710'); // wrinkles
     eyes(p, 410, 410, 40);
     eyes(p, 590, 410, 40);
@@ -136,7 +163,9 @@ export const pages: PageDef[] = [
 
   // 4 giraffe
   page('animals', 4, (p) => {
-    p.path('M410 340 L350 770 Q300 830 250 900 Q250 960 330 960 L670 960 Q750 960 750 900 Q700 830 650 770 L590 340 Z'); // neck + shoulders
+    p.path(
+      'M410 340 L350 770 Q300 830 250 900 Q250 960 330 960 L670 960 Q750 960 750 900 Q700 830 650 770 L590 340 Z',
+    ); // neck + shoulders
     p.ellipse(500, 230, 150, 135); // head
     p.ellipse(500, 300, 100, 66); // muzzle
     p.circle(468, 310, 12);
@@ -161,7 +190,10 @@ export const pages: PageDef[] = [
   page('animals', 5, (p) => {
     const n = 14;
     const R = 372;
-    const pt = (i: number) => [500 + R * Math.cos((i * 2 * Math.PI) / n), 520 + R * Math.sin((i * 2 * Math.PI) / n)];
+    const pt = (i: number) => [
+      500 + R * Math.cos((i * 2 * Math.PI) / n),
+      520 + R * Math.sin((i * 2 * Math.PI) / n),
+    ];
     const chord = 2 * R * Math.sin(Math.PI / n);
     const r = f(chord * 0.6);
     let d = `M${f(pt(0)[0]!)} ${f(pt(0)[1]!)}`;

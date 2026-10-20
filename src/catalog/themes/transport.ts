@@ -17,7 +17,12 @@ const bar = (p: Pen, x1: number, y1: number, x2: number, y2: number, w: number) 
   const a = Math.atan2(y2 - y1, x2 - x1);
   const nx = (-Math.sin(a) * w) / 2;
   const ny = (Math.cos(a) * w) / 2;
-  p.poly([[x1 + nx, y1 + ny], [x2 + nx, y2 + ny], [x2 - nx, y2 - ny], [x1 - nx, y1 - ny]]);
+  p.poly([
+    [x1 + nx, y1 + ny],
+    [x2 + nx, y2 + ny],
+    [x2 - nx, y2 - ny],
+    [x1 - nx, y1 - ny],
+  ]);
 };
 
 const smile = (p: Pen, x: number, y: number, w: number, d: number) =>
@@ -40,7 +45,8 @@ const chassis = (
   ar: number,
 ) => {
   let d = `M${x0} ${y0 + r} Q${x0} ${y0} ${x0 + r} ${y0} L${x1 - r} ${y0} Q${x1} ${y0} ${x1} ${y0 + r} L${x1} ${y1 - r} Q${x1} ${y1} ${x1 - r} ${y1}`;
-  for (const cx of [...arches].sort((a, b) => b - a)) d += ` L${cx + ar} ${y1} A${ar} ${ar} 0 0 0 ${cx - ar} ${y1}`;
+  for (const cx of [...arches].sort((a, b) => b - a))
+    d += ` L${cx + ar} ${y1} A${ar} ${ar} 0 0 0 ${cx - ar} ${y1}`;
   d += ` L${x0 + r} ${y1} Q${x0} ${y1} ${x0} ${y1 - r} Z`;
   p.path(d);
 };
@@ -247,9 +253,7 @@ export const pages: PageDef[] = [
   }),
   // 11 — Hot-air balloon
   page('transport', 11, (p) => {
-    p.path(
-      'M230 360 Q230 70 500 70 Q770 70 770 360 Q770 480 600 610 L400 610 Q230 480 230 360 Z',
-    );
+    p.path('M230 360 Q230 70 500 70 Q770 70 770 360 Q770 480 600 610 L400 610 Q230 480 230 360 Z');
     p.path('M500 70 Q330 330 430 610'); // gores
     p.path('M500 70 Q670 330 570 610');
     p.heart(500, 360, 110);
@@ -266,7 +270,9 @@ export const pages: PageDef[] = [
   page('transport', 12, (p) => {
     const C = [500, 540, 380, 175] as const;
     p.ellipse(...C);
-    p.path(`M455 ${ey(...C, 455, -1)} L455 250 Q455 220 485 220 L585 220 L585 265 L505 265 L505 ${ey(...C, 505, -1)}`); // periscope
+    p.path(
+      `M455 ${ey(...C, 455, -1)} L455 250 Q455 220 485 220 L585 220 L585 265 L505 265 L505 ${ey(...C, 505, -1)}`,
+    ); // periscope
     for (const x of [380, 520, 660]) p.circle(x, 540, 55);
     p.path(`M175 ${ey(...C, 175, -1)} L80 410 L80 480 L140 ${ey(...C, 140, -1) + 30}`); // tail fin
     p.path(`M170 ${ey(...C, 170, 1)} L80 670 L80 610 L140 ${ey(...C, 140, 1) - 30}`);

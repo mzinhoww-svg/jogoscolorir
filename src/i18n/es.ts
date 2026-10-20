@@ -173,6 +173,8 @@ export const es: Dict = {
   'update.available': 'Hay una versión nueva de la app.',
   'update.apply': 'Actualizar',
   'update.none': 'La app está actualizada.',
+  'update.pill': 'Nueva versión disponible',
+  'pwa.offlineReady': 'Listo para usar sin internet',
   'credits.title': 'Créditos y licencias',
   'credits.body':
     'Pinta Mundo es un juego de colorear original. Todos los dibujos, sonidos y textos se crearon para esta app. La fuente Baloo 2 se usa bajo la licencia SIL Open Font License 1.1. La app usa las bibliotecas de código abierto React e idb, bajo la licencia MIT.',

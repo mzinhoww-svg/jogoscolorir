@@ -174,6 +174,8 @@ export const en: Dict = {
   'update.available': 'A new version of the app is available.',
   'update.apply': 'Update',
   'update.none': 'The app is up to date.',
+  'update.pill': 'New version available',
+  'pwa.offlineReady': 'Ready to use offline',
   'credits.title': 'Credits and licenses',
   'credits.body':
     'Pinta Mundo is an original coloring game. All drawings, sounds and texts were created for this app. The Baloo 2 font is used under the SIL Open Font License 1.1. The app uses the open source libraries React and idb, under the MIT license.',
