@@ -16,3 +16,25 @@
 ## Tarefas
 | Task | Status | Commit | Verificação |
 |---|---|---|---|
+| 1 Scaffold | ok | 6c1de69 | lint/tc/test/build |
+| 2 Catálogo/regiões | ok | 596871d..ab51641 | regions+catalog |
+| 3 Motor | ok | 95016eb..7dc17d1 | 28+ testes |
+| 4 Persistência | ok | 257da5b | 19 testes |
+| 5 i18n/áudio | ok | b8ad1d3..c7222ed | |
+| 6 Interface | ok | 513fe63..ea76fb6 | revisão opus, fila de salvamento |
+| 7 Arte 135 páginas | ok | merges eff89ad, 896d9d4, (robots…) + 5dd41ea | catalog 300/300 |
+| 8 PWA | ok | 654f0c9..86599e4 | offline E2E |
+| 9 E2E | ok | 5f609d1..a25f1ac | 13–14 testes |
+| Revisão final + correções | ok | 571d579..7580fd3 | 405 unit, 14 E2E |
+| 10 Docs/deploy | em andamento | | preview 14/14 |
+
+## Rulings (decisões tomadas sem consulta)
+- Branch de trabalho no checkout principal; arte e persistência em worktrees paralelas — custo: merges extras.
+- Script de folha de contato escrito pelo controlador (ferramenta, não produto).
+- Animação de onda do balde e reduced-motion na UI, não no motor.
+- CATALOG_COMPLETE ativado pelo controlador após os 135 desenhos.
+- Trailer "Sonnet" em alguns commits de subagentes mantido (sem reescrever histórico).
+- Atualização multi-aba e nova tentativa após navegação durante flush: estacionados (seguros, nunca recarregam).
+
+## Próximo passo
+PR → `claude/blissful-volta-ukpmo1`, merge, verificar produção.
