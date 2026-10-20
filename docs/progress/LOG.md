@@ -26,7 +26,7 @@
 | 8 PWA | ok | 654f0c9..86599e4 | offline E2E |
 | 9 E2E | ok | 5f609d1..a25f1ac | 13–14 testes |
 | Revisão final + correções | ok | 571d579..7580fd3 | 405 unit, 14 E2E |
-| 10 Docs/deploy | em andamento | | preview 14/14 |
+| 10 Docs/deploy | ok | PR #1 → 8b4ddb2 | preview 14/14, produção 14/14 |
 
 ## Rulings (decisões tomadas sem consulta)
 - Branch de trabalho no checkout principal; arte e persistência em worktrees paralelas — custo: merges extras.
@@ -37,4 +37,4 @@
 - Atualização multi-aba e nova tentativa após navegação durante flush: estacionados (seguros, nunca recarregam).
 
 ## Próximo passo
-PR → `claude/blissful-volta-ukpmo1`, merge, verificar produção.
+Concluído. Sugestões futuras: polir desenhos fracos, testar Safari/iOS, avaliar remover o APK de terceiros do repositório público.

@@ -46,3 +46,10 @@ Folhas de contato dos 9 temas revisadas pelo controlador; 6 páginas fracas fora
 - Em 360×640 e 640×360 a paleta é uma faixa rolável.
 - Alguns desenhos têm pontinhos onde linhas quase se tocam (robots-10, fairytale-01, fairytale-15).
 - Atualização bloqueada por desenho não salvo: se a criança abrir a pintura durante a gravação, a atualização espera o botão manual.
+
+## Produção
+- Merge do PR https://github.com/mzinhoww-svg/jogoscolorir/pull/1 → commit `8b4ddb2` em `claude/blissful-volta-ukpmo1`.
+- Deploy de produção `dpl_F5mwTgPbamdKqH7nGqrXU2aDTd5f`, READY, gitCommitSha `8b4ddb2`, alias `jogoscolorir.vercel.app`.
+- Suíte E2E completa contra https://jogoscolorir.vercel.app: **14/14**.
+- `/apk/coloring-1-116.apk`, `/CLONE_SPEC.md`, `/re/dump.txt` → 404; `/sw.js` e `/manifest.webmanifest` → 200.
+- Captura em Pixel 7 emulado: tema Natal e pintura com balde + brilho, sem vazamento.
