@@ -346,3 +346,31 @@ for (const mode of ['sync-throw', 'async-error'] as const) {
     });
   });
 }
+
+test('toast on the paint screen sits at the top and never blocks canvas taps', async ({ page }) => {
+  await openPage(page, 'animals', 'animals-01');
+  const r = await page.evaluate(() => {
+    const region = document.querySelector('.toast-region')!;
+    region.insertAdjacentHTML(
+      'beforeend',
+      '<div class="toast toast-info"><span>hello</span><button class="toast-close">x</button></div>',
+    );
+    const c = document.querySelector<HTMLCanvasElement>('[data-testid="paint-canvas"]')!;
+    const b = c.getBoundingClientRect();
+    const toast = region.querySelector('.toast')!.getBoundingClientRect();
+    const close = region.querySelector('.toast-close')!.getBoundingClientRect();
+    const hit = (x: number, y: number) => document.elementFromPoint(x, y);
+    return {
+      regionTop: region.classList.contains('toast-region-top'),
+      toastBottom: toast.bottom,
+      canvasBottom: b.bottom,
+      bottomIsCanvas: hit(b.left + b.width / 2, b.bottom - 6) === c,
+      overToastBody: hit(toast.left + 4, toast.top + toast.height / 2)?.className ?? '',
+      closeIsButton: hit(close.left + close.width / 2, close.top + close.height / 2)?.className,
+    };
+  });
+  expect(r.regionTop).toBe(true);
+  expect(r.bottomIsCanvas).toBe(true);
+  expect(r.overToastBody).not.toContain('toast');
+  expect(r.closeIsButton).toBe('toast-close');
+});

@@ -422,8 +422,14 @@ p {
   pointer-events: none;
   z-index: 60;
 }
+/* On the paint screen toasts sit at the top so they never cover the canvas bottom. */
+.toast-region.toast-region-top {
+  bottom: auto;
+  top: calc(72px + var(--sat));
+}
 .toast {
-  pointer-events: auto;
+  /* Never intercept taps: only the close button below is interactive. */
+  pointer-events: none;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -434,6 +440,9 @@ p {
   font-weight: 600;
   max-width: calc(100% - 32px);
   box-shadow: var(--shadow);
+}
+.toast .toast-close {
+  pointer-events: auto;
 }
 .toast-error {
   background: #c92a2a;

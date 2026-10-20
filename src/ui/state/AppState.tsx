@@ -10,6 +10,9 @@ import {
 import { loadPrefs, savePrefs, type Prefs } from '@/persistence/prefs';
 import { audio } from '@/audio/audio';
 
+/** Informational toasts (e.g. offline-ready) dismiss themselves after this long. */
+export const INFO_TOAST_MS = 4000;
+
 export type ToastKind = 'info' | 'error';
 export interface ToastMsg {
   id: number;
@@ -72,7 +75,7 @@ export function AppStateProvider(props: { initial: Prefs; children?: ReactNode }
   const showToast = useCallback((text: string, kind: ToastKind = 'info') => {
     clearTimeout(timer.current);
     setToast({ id: ++toastId.current, text, kind });
-    timer.current = setTimeout(() => setToast(null), kind === 'error' ? 7000 : 3500);
+    timer.current = setTimeout(() => setToast(null), kind === 'error' ? 7000 : INFO_TOAST_MS);
   }, []);
 
   const value = useMemo<AppStateValue>(
