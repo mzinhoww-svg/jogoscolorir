@@ -102,6 +102,11 @@ export const es: Dict = {
   'save.failed.help':
     'Tu dibujo sigue en la pantalla, pero el navegador no permitió guardarlo. Puede que no haya espacio o que uses navegación privada. Usa "Guardar imagen" para conservar una copia.',
   'save.retry': 'Reintentar',
+  'save.leave.title': '¿Salir sin guardar?',
+  'save.leave.body':
+    'No pudimos guardar este dibujo en este dispositivo. Si sales ahora, los últimos colores pueden perderse. Usa "Guardar imagen" para conservar una copia.',
+  'save.leave.stay': 'Quedarme aquí',
+  'save.leave.go': 'Salir de todos modos',
   'export.failed': 'No se pudo crear la imagen.',
   'gallery.title': 'Mis dibujos',
   'gallery.empty': 'Aún no has pintado nada. ¿Y si empiezas ahora?',

@@ -101,6 +101,11 @@ export const ptBR = {
   'save.failed.help':
     'Seu desenho continua na tela, mas o navegador não deixou guardá-lo. Pode ser falta de espaço ou navegação privada. Use "Salvar imagem" para guardar uma cópia.',
   'save.retry': 'Tentar de novo',
+  'save.leave.title': 'Sair sem salvar?',
+  'save.leave.body':
+    'Não conseguimos guardar este desenho neste aparelho. Se sair agora, as últimas cores podem se perder. Use "Salvar imagem" para guardar uma cópia.',
+  'save.leave.stay': 'Ficar aqui',
+  'save.leave.go': 'Sair mesmo assim',
   'export.failed': 'Não foi possível criar a imagem.',
   'gallery.title': 'Meus desenhos',
   'gallery.empty': 'Você ainda não pintou nada. Que tal começar agora?',

@@ -102,6 +102,11 @@ export const en: Dict = {
   'save.failed.help':
     'Your drawing is still on screen, but the browser would not store it. There may be no space left, or private browsing is on. Use "Save picture" to keep a copy.',
   'save.retry': 'Try again',
+  'save.leave.title': 'Leave without saving?',
+  'save.leave.body':
+    'We couldn\'t store this drawing on this device. If you leave now, the latest colors may be lost. Use "Save image" to keep a copy.',
+  'save.leave.stay': 'Stay here',
+  'save.leave.go': 'Leave anyway',
   'export.failed': 'Could not create the picture.',
   'gallery.title': 'My drawings',
   'gallery.empty': 'You have not painted anything yet. Why not start now?',
